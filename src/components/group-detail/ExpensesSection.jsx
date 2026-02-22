@@ -1,0 +1,244 @@
+import React, { useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { base44 } from "@/api/base44Client";
+import { Receipt, Plus, Trash2, Pencil } from "lucide-react";
+import { format } from "date-fns";
+
+export default function ExpensesSection({ group, expenses, categories, user, onRefresh }) {
+    const [showAdd, setShowAdd] = useState(false);
+    const [editingExpense, setEditingExpense] = useState(null);
+    const [description, setDescription] = useState("");
+    const [amount, setAmount] = useState("");
+    const [categoryId, setCategoryId] = useState("");
+    const [paidByEmail, setPaidByEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const isOwner = group.owner_email === user.email;
+    const allMembers = [group.owner_email, ...(group.members || [])];
+
+    const handleAddExpense = async () => {
+        const parsedAmount = parseFloat(amount);
+        if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0 || !categoryId) return;
+        if (isOwner && !paidByEmail) return;
+
+        const targetEmail = isOwner ? paidByEmail : user.email;
+
+        setLoading(true);
+
+        if (editingExpense) {
+            await base44.entities.Expense.update(editingExpense.id, {
+                category_id: categoryId,
+                description: description.trim(),
+                amount: parsedAmount,
+                paid_by_email: targetEmail,
+                paid_by_name: targetEmail,
+            });
+        } else {
+            await base44.entities.Expense.create({
+                group_id: group.id,
+                category_id: categoryId,
+                description: description.trim(),
+                amount: parsedAmount,
+                paid_by_email: targetEmail,
+                paid_by_name: targetEmail,
+                date: new Date().toISOString().split("T")[0],
+            });
+        }
+
+        setDescription("");
+        setAmount("");
+        setCategoryId("");
+        setPaidByEmail("");
+        setEditingExpense(null);
+        setLoading(false);
+        setShowAdd(false);
+        onRefresh();
+    };
+
+    const handleEdit = (expense) => {
+        setEditingExpense(expense);
+        setDescription(expense.description);
+        setAmount(expense.amount.toString());
+        setCategoryId(expense.category_id);
+        setPaidByEmail(expense.paid_by_email);
+        setShowAdd(true);
+    };
+
+    const handleDelete = async (id) => {
+        await base44.entities.Expense.delete(id);
+        onRefresh();
+    };
+
+    return (
+        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+            <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <Receipt className="w-5 h-5 text-rose-500" />
+                        Expenses
+                    </CardTitle>
+                    <Button size="sm" onClick={() => setShowAdd(true)}>
+                        <Plus className="w-4 h-4 mr-1" /> Add
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent>
+                {expenses.length === 0 ? (
+                    <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
+                        No expenses yet. Add one to track shared costs.
+                    </p>
+                ) : (
+                    <div className="space-y-2">
+                        {expenses.map((expense) => {
+                            const category = categories.find(c => c.id === expense.category_id);
+                            return (
+                                <div
+                                    key={expense.id}
+                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
+                                >
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                            {expense.description}
+                                        </p>
+                                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                                            <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                                                {category?.name || "Unknown"}
+                                            </span>
+                                            <span>•</span>
+                                            <span>Paid by {expense.paid_by_name || expense.paid_by_email}</span>
+                                            {expense.date && (
+                                                <>
+                                                    <span>•</span>
+                                                    <span>{format(new Date(expense.date), "MMM d, yyyy")}</span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2 ml-3">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                            ${expense.amount.toFixed(2)}
+                                        </span>
+                                        {(expense.paid_by_email === user.email || isOwner) && (
+                                            <>
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-7 w-7"
+                                                    onClick={() => handleEdit(expense)}
+                                                >
+                                                    <Pencil className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-500" />
+                                                </Button>
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-7 w-7"
+                                                    onClick={() => handleDelete(expense.id)}
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </CardContent>
+
+            <Dialog open={showAdd} onOpenChange={setShowAdd}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        {isOwner && (
+                            <div className="space-y-2">
+                                <Label>Paid By</Label>
+                                <Select value={paidByEmail} onValueChange={setPaidByEmail}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select who paid" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allMembers.map(email => (
+                                            <SelectItem key={email} value={email}>{email}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label>Category</Label>
+                            <Select value={categoryId} onValueChange={setCategoryId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a budget category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((cat) => (
+                                        <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {categories.length === 0 && (
+                                <p className="text-xs text-amber-600">Add a budget category first</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                placeholder="e.g. Weekly groceries"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Amount</Label>
+                            <Input
+                                type="number"
+                                placeholder="e.g. 150"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setShowAdd(false);
+                            setEditingExpense(null);
+                            setDescription("");
+                            setAmount("");
+                            setCategoryId("");
+                            setPaidByEmail("");
+                        }}>Cancel</Button>
+                        <Button
+                            onClick={handleAddExpense}
+                            disabled={!description.trim() || !amount || !categoryId || (isOwner && !paidByEmail) || loading}
+
+                        >
+                            {loading ? (editingExpense ? "Saving..." : "Adding...") : (editingExpense ? "Save" : "Add Expense")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </Card>
+    );
+}
