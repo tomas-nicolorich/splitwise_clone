@@ -13,11 +13,14 @@ import { base44 } from "@/api/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
+import { supabase } from "@/lib/supabase-client";
 
 export default function SetupProfileModal() {
     const { user } = useAuth();
     const [open, setOpen] = useState(false);
     const [name, setName] = useState("");
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -37,18 +40,43 @@ export default function SetupProfileModal() {
     }, [user]);
 
     const handleSave = async () => {
-        if (!name.trim()) return;
+        if (!name.trim()) {
+            toast.error("Please enter your name.");
+            return;
+        }
+        if (!password) {
+            toast.error("Please enter a password.");
+            return;
+        }
+        if (password.length < 6) {
+            toast.error("Password must be at least 6 characters.");
+            return;
+        }
+        if (password !== confirmPassword) {
+            toast.error("Passwords do not match.");
+            return;
+        }
+
         setLoading(true);
 
         try {
+            // Update name in DB
             await base44.auth.updateMe({ full_name: name.trim() });
+            
+            // Update password in Supabase
+            const { error: passwordError } = await supabase.auth.updateUser({
+                password: password
+            });
+
+            if (passwordError) throw passwordError;
+
             toast.success("Profile updated!");
             setOpen(false);
             // Refresh page to update name everywhere
             window.location.reload();
         } catch (e) {
             console.error("Error updating profile:", e);
-            toast.error("Failed to update profile.");
+            toast.error(e.message || "Failed to update profile.");
         } finally {
             setLoading(false);
         }
@@ -68,7 +96,7 @@ export default function SetupProfileModal() {
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Welcome to SplitWise! Please tell us your name so your group members can recognize you.
+                        Welcome to SplitWise! Please tell us your name and set a password so you can log in later.
                     </p>
                     <div className="space-y-2">
                         <Label className="dark:text-slate-300">Your Full Name</Label>
@@ -82,9 +110,29 @@ export default function SetupProfileModal() {
                             className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                         />
                     </div>
+                    <div className="space-y-2">
+                        <Label className="dark:text-slate-300">Set Password</Label>
+                        <Input
+                            type="password"
+                            placeholder="Min. 6 characters"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="dark:text-slate-300">Confirm Password</Label>
+                        <Input
+                            type="password"
+                            placeholder="Confirm your password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                        />
+                    </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleSave} disabled={!name.trim() || loading} className="w-full bg-indigo-600 hover:bg-indigo-700">
+                    <Button onClick={handleSave} disabled={!name.trim() || !password || loading} className="w-full bg-indigo-600 hover:bg-indigo-700">
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Get Started
                     </Button>
