@@ -1,20 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { base44 } from "@/api/base44Client";
-import { Users, LogOut, PieChart, Menu, X, Moon, Sun } from "lucide-react";
+import { base44 } from "@/api/client";
+import { LogOut, PieChart, Menu, X, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SetupProfileModal from "./components/SetupProfileModal";
+import { useAuth } from "./lib/AuthContext";
 
 export default function Layout({ children, currentPageName }) {
-    const [user, setUser] = useState(null);
+    const { user } = useAuth();
     const [menuOpen, setMenuOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem('darkMode') === 'true';
     });
-
-    useEffect(() => {
-        base44.auth.me().then(setUser).catch(() => { });
-    }, []);
 
     useEffect(() => {
         if (darkMode) {
@@ -22,7 +20,7 @@ export default function Layout({ children, currentPageName }) {
         } else {
             document.documentElement.classList.remove('dark');
         }
-        localStorage.setItem('darkMode', darkMode);
+        localStorage.setItem('darkMode', String(darkMode));
     }, [darkMode]);
 
     return (
@@ -114,6 +112,7 @@ export default function Layout({ children, currentPageName }) {
             <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
                 {children}
             </main>
+            <SetupProfileModal />
         </div>
     );
 }

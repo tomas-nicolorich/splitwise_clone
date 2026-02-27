@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import GroupCard from "../components/groups/GroupCard.jsx";
 import CreateGroupDialog from "../components/groups/CreateGroupDialog";
+import { useAuth } from "../lib/AuthContext";
 
 export default function Dashboard() {
-    const [user, setUser] = useState(null);
+    const { user } = useAuth();
     const [showCreate, setShowCreate] = useState(false);
     const queryClient = useQueryClient();
-
-    useEffect(() => {
-        base44.auth.me().then(setUser);
-    }, []);
 
     const { data: groups = [], isLoading } = useQuery({
         queryKey: ["groups"],
@@ -22,15 +19,14 @@ export default function Dashboard() {
     });
 
     const myGroups = groups.filter(
-        (g) => g.owner_email === user?.email || g.members?.includes(user?.email)
+        (g) => g.members?.includes(user?.id)
     );
 
     const createMutation = useMutation({
         mutationFn: (data) =>
             base44.entities.Group.create({
                 ...data,
-                owner_email: user.email,
-                members: [],
+                members: [user.id],
             }),
         onSuccess: () => queryClient.invalidateQueries({ queryKey: ["groups"] }),
     });

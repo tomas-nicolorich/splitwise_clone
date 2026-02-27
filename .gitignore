@@ -28,3 +28,9 @@ dist-ssr
 *.sw?
 
 .env
+
+/generated/prisma
+
+.vercel
+
+supabase

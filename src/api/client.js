@@ -1,120 +1,193 @@
-// Local Storage based replacement for Base44 SDK
-const STORAGE_KEY_PREFIX = 'splitwise_data_';
+import { supabase } from '@/lib/supabase-client';
 
-const getStore = (entity) => {
-    const data = localStorage.getItem(STORAGE_KEY_PREFIX + entity);
-    return data ? JSON.parse(data) : [];
-};
+// Vercel Serverless Function based backend (Prisma + Supabase)
+const API_BASE_URL = '/api';
 
-const setStore = (entity, data) => {
-    localStorage.setItem(STORAGE_KEY_PREFIX + entity, JSON.stringify(data));
+const fetchAPI = async (endpoint, options = {}) => {
+  const { providedSession, ...otherOptions } = options;
+  
+  // Use provided session or fetch current one
+  let session = providedSession;
+  if (!session) {
+    const sessionRes = await supabase.auth.getSession();
+    session = sessionRes.data.session;
+  }
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
+    ...otherOptions.headers,
+  };
+
+  const url = `${API_BASE_URL}/${endpoint}`;
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    const response = await fetch(url, {
+      ...otherOptions,
+      headers,
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error(`[API] Error from ${url}:`, data.error);
+      throw new Error(data.error || 'API Error');
+    }
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      console.error(`[API] Request to ${url} timed out`);
+      throw new Error('Request timed out');
+    }
+    console.error(`[API] Fetch error for ${url}:`, error);
+    throw error;
+  }
 };
 
 const createEntityStore = (entityName) => ({
-    list: async (sort) => {
-        let items = getStore(entityName);
-        if (sort === '-created_date') {
-            items.sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
-        }
-        return items;
-    },
-    filter: async (criteria) => {
-        let items = getStore(entityName);
-        return items.filter(item => {
-            return Object.entries(criteria).every(([key, value]) => {
-                if (typeof value === 'object' && value !== null) {
-                    if (value.$in) return value.$in.includes(item[key]);
-                }
-                return item[key] === value;
-            });
-        });
-    },
-    create: async (data) => {
-        const items = getStore(entityName);
-        const newItem = {
-            ...data,
-            id: Math.random().toString(36).substr(2, 9),
-            created_date: new Date().toISOString()
-        };
-        items.push(newItem);
-        setStore(entityName, items);
-        return newItem;
-    },
-    update: async (id, data) => {
-        const items = getStore(entityName);
-        const index = items.findIndex(item => item.id === id);
-        if (index > -1) {
-            items[index] = { ...items[index], ...data };
-            setStore(entityName, items);
-            return items[index];
-        }
-        throw new Error(`${entityName} not found`);
-    },
-    delete: async (id) => {
-        const items = getStore(entityName);
-        const filtered = items.filter(item => item.id !== id);
-        setStore(entityName, filtered);
-        return true;
-    }
+  list: async (sort) => {
+    return fetchAPI(`data?entity=${entityName}&operation=list`, {
+      method: 'POST',
+      body: JSON.stringify({ sort }),
+    });
+  },
+  filter: async (criteria) => {
+    return fetchAPI(`data?entity=${entityName}&operation=filter`, {
+      method: 'POST',
+      body: JSON.stringify({ criteria }),
+    });
+  },
+  create: async (data) => {
+    return fetchAPI(`data?entity=${entityName}&operation=create`, {
+      method: 'POST',
+      body: JSON.stringify({ data }),
+    });
+  },
+  update: async (id, data) => {
+    return fetchAPI(`data?entity=${entityName}&operation=update`, {
+      method: 'POST',
+      body: JSON.stringify({ id, data }),
+    });
+  },
+  delete: async (id) => {
+    return fetchAPI(`data?entity=${entityName}&operation=delete`, {
+      method: 'POST',
+      body: JSON.stringify({ id }),
+    });
+  },
 });
 
-const mockUser = {
-    id: 'user_1',
-    email: 'demo@example.com',
-    full_name: 'Demo User',
-    display_name: 'Demo User'
-};
-
 export const base44 = {
-    auth: {
-        me: async () => {
-            const stored = localStorage.getItem('splitwise_user');
-            if (stored) return JSON.parse(stored);
-            localStorage.setItem('splitwise_user', JSON.stringify(mockUser));
-            return mockUser;
-        },
-        updateMe: async (data) => {
-            const user = await base44.auth.me();
-            const updated = { ...user, ...data };
-            localStorage.setItem('splitwise_user', JSON.stringify(updated));
-            return updated;
-        },
-        logout: (redirect) => {
-            localStorage.removeItem('splitwise_user');
-            if (redirect) window.location.href = '/';
-        },
-        redirectToLogin: (redirect) => {
-            // In local version, we just "log in" automatically or show a simple form
-            base44.auth.me().then(() => {
-                if (redirect) window.location.href = redirect;
+  auth: {
+    me: async (providedSession = null) => {
+      try {
+        let session = providedSession;
+        if (!session) {
+          const sessionRes = await supabase.auth.getSession();
+          session = sessionRes.data.session;
+        }
+
+        if (session?.user) {
+          // Fetch the user from public.Users table by auth_id
+          const dbUsers = await fetchAPI('data?entity=Users&operation=filter', {
+            method: 'POST',
+            providedSession: session,
+            body: JSON.stringify({
+              criteria: { auth_id: session.user.id }
+            })
+          });
+
+          if (dbUsers && dbUsers.length > 0) {
+            const dbUser = dbUsers[0];
+            return {
+              id: dbUser.id.toString(),
+              name: dbUser.name,
+              full_name: dbUser.name,
+              email: session.user.email
+            };
+          }
+
+          // Fallback if not found in public.Users (e.g. if the trigger hasn't finished)
+          // Try to fetch via backend 'auth' operation which might auto-create
+          try {
+            const backendUser = await fetchAPI(`auth?operation=me&auth_id=${session.user.id}`, {
+              providedSession: session
             });
-        }
-    },
-    entities: {
-        Group: createEntityStore('groups'),
-        Income: createEntityStore('income'),
-        BudgetCategory: createEntityStore('budgets'),
-        Expense: createEntityStore('expenses'),
-        User: {
-            ...createEntityStore('users'),
-            filter: async (criteria) => {
-                // Return mock user if searching by email
-                if (criteria.email === mockUser.email || (criteria.email?.$in && criteria.email.$in.includes(mockUser.email))) {
-                    return [mockUser];
-                }
-                return [];
+            if (backendUser && backendUser.id) {
+              return {
+                ...backendUser,
+                email: session.user.email,
+                full_name: backendUser.name
+              };
             }
+          } catch (backendError) {
+            console.warn('[Auth.me] Backend me failed, using fallback:', backendError);
+          }
+
+          return {
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+            full_name: session.user.user_metadata?.full_name || session.user.email.split('@')[0],
+            email: session.user.email
+          };
         }
+        
+        return await fetchAPI('auth?operation=me', { providedSession: session });
+      } catch (e) {
+        console.error('[Auth.me] Error:', e);
+        throw e;
+      }
     },
-    users: {
-        inviteUser: async (email, role) => {
-            console.log('Inviting user:', email, role);
-            return true;
-        }
+    updateMe: async (data) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      return fetchAPI('auth?operation=updateMe', {
+        method: 'POST',
+        body: JSON.stringify({ data, auth_id: session?.user?.id }),
+      });
     },
-    appLogs: {
-        logUserInApp: async (page) => {
-            console.log('User visited:', page);
-        }
-    }
+    inviteUserByEmail: async (email) => {
+      return fetchAPI('auth?operation=invite', {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      });
+    },
+    logout: async (redirect) => {
+      await supabase.auth.signOut();
+      if (redirect) window.location.href = '/login';
+    },
+    redirectToLogin: (redirect) => {
+      window.location.href = '/login';
+    },
+  },
+  entities: {
+    Group: createEntityStore('Group'),
+    Income: createEntityStore('Income'),
+    BudgetCategory: createEntityStore('BudgetCategory'),
+    Expense: createEntityStore('Expense'),
+    Users: {
+      ...createEntityStore('Users'),
+      filter: async (criteria) => {
+        return fetchAPI(`data?entity=Users&operation=filter`, {
+          method: 'POST',
+          body: JSON.stringify({ criteria }),
+        });
+      },
+    },
+  },
+  users: {
+    inviteUser: async (nameOrId, role) => {
+      // In a real app, this might be an API call to create a record or send an email
+      return true;
+    },
+  },
+  appLogs: {
+    logUserInApp: async (page) => {
+      // Logic for logging user app usage
+    },
+  },
 };

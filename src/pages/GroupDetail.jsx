@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, UserPlus, Loader2, Settings, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Trash2 } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,18 +21,15 @@ import IncomeSection from "../components/group-detail/IncomeSection";
 import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
 import SettlementSection from "../components/group-detail/SettlementSection";
+import { useAuth } from "../lib/AuthContext";
 
 export default function GroupDetail() {
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get("id");
-    const [user, setUser] = useState(null);
+    const { user } = useAuth();
     const [showInvite, setShowInvite] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const queryClient = useQueryClient();
-
-    useEffect(() => {
-        base44.auth.me().then(setUser);
-    }, []);
 
     const { data: group, isLoading: groupLoading } = useQuery({
         queryKey: ["group", groupId],
@@ -41,6 +38,16 @@ export default function GroupDetail() {
             return groups[0];
         },
         enabled: !!groupId,
+    });
+
+    // Fetch member details
+    const { data: members = [] } = useQuery({
+        queryKey: ["members", group?.members],
+        queryFn: async () => {
+            if (!group?.members?.length) return [];
+            return base44.entities.Users.filter({ id: { $in: group.members } });
+        },
+        enabled: !!group?.members?.length,
     });
 
     const { data: incomes = [] } = useQuery({
@@ -63,6 +70,7 @@ export default function GroupDetail() {
 
     const refreshAll = () => {
         queryClient.invalidateQueries({ queryKey: ["group", groupId] });
+        queryClient.invalidateQueries({ queryKey: ["members", group?.members] });
         queryClient.invalidateQueries({ queryKey: ["incomes", groupId] });
         queryClient.invalidateQueries({ queryKey: ["categories", groupId] });
         queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
@@ -102,7 +110,7 @@ export default function GroupDetail() {
         );
     }
 
-    const isOwner = group.owner_email === user.email;
+    const isOwner = group.members?.[0] === user.id;
 
     return (
         <div>
@@ -145,19 +153,19 @@ export default function GroupDetail() {
 
             {/* Members strip */}
             <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-                {[group.owner_email, ...(group.members || [])].map((email, idx) => (
+                {members.map((member, idx) => (
                     <div
-                        key={email}
+                        key={member.id}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
                     >
                         <div className="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
                             <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
-                                {email[0].toUpperCase()}
+                                {member.name[0].toUpperCase()}
                             </span>
                         </div>
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                            {email}
-                            {email === group.owner_email && (
+                            {member.name}
+                            {idx === 0 && (
                                 <span className="text-indigo-500 dark:text-indigo-400 ml-1">• Owner</span>
                             )}
                         </span>
@@ -170,6 +178,7 @@ export default function GroupDetail() {
                     group={group}
                     incomes={incomes}
                     user={user}
+                    members={members}
                     onRefresh={refreshAll}
                 />
                 <BudgetSection
@@ -177,6 +186,7 @@ export default function GroupDetail() {
                     categories={categories}
                     incomes={incomes}
                     expenses={expenses}
+                    members={members}
                     onRefresh={refreshAll}
                 />
             </div>
@@ -187,6 +197,7 @@ export default function GroupDetail() {
                     expenses={expenses}
                     categories={categories}
                     user={user}
+                    members={members}
                     onRefresh={refreshAll}
                 />
                 <SettlementSection
@@ -194,6 +205,7 @@ export default function GroupDetail() {
                     expenses={expenses}
                     incomes={incomes}
                     categories={categories}
+                    members={members}
                 />
             </div>
 
