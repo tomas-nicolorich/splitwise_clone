@@ -17,59 +17,66 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/client";
 import { Receipt, Plus, Trash2, Pencil } from "lucide-react";
 import { format } from "date-fns";
 
-export default function ExpensesSection({ group, expenses, categories, user, onRefresh }) {
+export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh }) {
     const [showAdd, setShowAdd] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
     const [categoryId, setCategoryId] = useState("");
-    const [paidByEmail, setPaidByEmail] = useState("");
+    const [paidByUserId, setPaidByUserId] = useState("");
     const [loading, setLoading] = useState(false);
 
-    const isOwner = group.owner_email === user.email;
-    const allMembers = [group.owner_email, ...(group.members || [])];
+    const isOwner = group.members?.[0] === user.id;
+
+    const getUserName = (userId) => {
+        const member = members.find(m => m.id === userId);
+        return member ? member.name : "Unknown User";
+    };
 
     const handleAddExpense = async () => {
         const parsedAmount = parseFloat(amount);
         if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0 || !categoryId) return;
-        if (isOwner && !paidByEmail) return;
+        if (isOwner && !paidByUserId) return;
 
-        const targetEmail = isOwner ? paidByEmail : user.email;
+        const targetUserId = isOwner ? paidByUserId : user.id;
 
         setLoading(true);
 
-        if (editingExpense) {
-            await base44.entities.Expense.update(editingExpense.id, {
-                category_id: categoryId,
-                description: description.trim(),
-                amount: parsedAmount,
-                paid_by_email: targetEmail,
-                paid_by_name: targetEmail,
-            });
-        } else {
-            await base44.entities.Expense.create({
-                group_id: group.id,
-                category_id: categoryId,
-                description: description.trim(),
-                amount: parsedAmount,
-                paid_by_email: targetEmail,
-                paid_by_name: targetEmail,
-                date: new Date().toISOString().split("T")[0],
-            });
-        }
+        try {
+            if (editingExpense) {
+                await base44.entities.Expense.update(editingExpense.id, {
+                    category_id: categoryId,
+                    description: description.trim(),
+                    amount: parsedAmount,
+                    paid_by: targetUserId,
+                });
+            } else {
+                await base44.entities.Expense.create({
+                    group_id: group.id,
+                    category_id: categoryId,
+                    description: description.trim(),
+                    amount: parsedAmount,
+                    paid_by: targetUserId,
+                    date: new Date().toISOString().split("T")[0],
+                });
+            }
 
-        setDescription("");
-        setAmount("");
-        setCategoryId("");
-        setPaidByEmail("");
-        setEditingExpense(null);
-        setLoading(false);
-        setShowAdd(false);
-        onRefresh();
+            setDescription("");
+            setAmount("");
+            setCategoryId("");
+            setPaidByUserId("");
+            setEditingExpense(null);
+            setLoading(false);
+            setShowAdd(false);
+            onRefresh();
+        } catch (e) {
+            console.error("Error saving expense:", e);
+            setLoading(false);
+        }
     };
 
     const handleEdit = (expense) => {
@@ -77,7 +84,7 @@ export default function ExpensesSection({ group, expenses, categories, user, onR
         setDescription(expense.description);
         setAmount(expense.amount.toString());
         setCategoryId(expense.category_id);
-        setPaidByEmail(expense.paid_by_email);
+        setPaidByUserId(expense.paid_by);
         setShowAdd(true);
     };
 
@@ -122,7 +129,7 @@ export default function ExpensesSection({ group, expenses, categories, user, onR
                                                 {category?.name || "Unknown"}
                                             </span>
                                             <span>•</span>
-                                            <span>Paid by {expense.paid_by_name || expense.paid_by_email}</span>
+                                            <span>Paid by {getUserName(expense.paid_by)}</span>
                                             {expense.date && (
                                                 <>
                                                     <span>•</span>
@@ -133,9 +140,9 @@ export default function ExpensesSection({ group, expenses, categories, user, onR
                                     </div>
                                     <div className="flex items-center gap-2 ml-3">
                                         <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                            ${expense.amount.toFixed(2)}
+                                            ${Number(expense.amount).toFixed(2)}
                                         </span>
-                                        {(expense.paid_by_email === user.email || isOwner) && (
+                                        {(expense.paid_by === user.id || isOwner) && (
                                             <>
                                                 <Button
                                                     size="icon"
@@ -172,13 +179,13 @@ export default function ExpensesSection({ group, expenses, categories, user, onR
                         {isOwner && (
                             <div className="space-y-2">
                                 <Label>Paid By</Label>
-                                <Select value={paidByEmail} onValueChange={setPaidByEmail}>
+                                <Select value={paidByUserId} onValueChange={setPaidByUserId}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select who paid" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {allMembers.map(email => (
-                                            <SelectItem key={email} value={email}>{email}</SelectItem>
+                                        {members.map(member => (
+                                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
@@ -227,11 +234,11 @@ export default function ExpensesSection({ group, expenses, categories, user, onR
                             setDescription("");
                             setAmount("");
                             setCategoryId("");
-                            setPaidByEmail("");
+                            setPaidByUserId("");
                         }}>Cancel</Button>
                         <Button
                             onClick={handleAddExpense}
-                            disabled={!description.trim() || !amount || !categoryId || (isOwner && !paidByEmail) || loading}
+                            disabled={!description.trim() || !amount || !categoryId || (isOwner && !paidByUserId) || loading}
 
                         >
                             {loading ? (editingExpense ? "Saving..." : "Adding...") : (editingExpense ? "Save" : "Add Expense")}

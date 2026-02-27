@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, ChevronRight } from "lucide-react";
 
 export default function GroupCard({ group }) {
-    const memberCount = (group.members?.length || 0) + 1;
+    const memberCount = (group.members?.length || 0);
 
     return (
         <Link to={createPageUrl(`GroupDetail?id=${group.id}`)}>

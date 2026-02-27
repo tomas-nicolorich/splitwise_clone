@@ -4,62 +4,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DollarSign, Pencil, Check, X, User } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { base44 } from "@/api/client";
 
-export default function IncomeSection({ group, incomes, user, onRefresh }) {
+export default function IncomeSection({ group, incomes, user, members, onRefresh }) {
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
     const [addingIncome, setAddingIncome] = useState(false);
     const [newAmount, setNewAmount] = useState("");
-    const [addingForEmail, setAddingForEmail] = useState("");
-    const [editingNameEmail, setEditingNameEmail] = useState(null);
+    const [addingForUserId, setAddingForUserId] = useState("");
+    const [editingNameUserId, setEditingNameUserId] = useState(null);
     const [editNameValue, setEditNameValue] = useState("");
-    const [userNames, setUserNames] = useState({});
 
     const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
-    const myIncome = incomes.find((i) => i.user_email === user.email);
-    const allMembers = [group.owner_email, ...(group.members || [])];
-    const isOwner = group.owner_email === user.email;
+    const isOwner = group.members?.[0] === user.id;
 
-    React.useEffect(() => {
-        const fetchUserNames = async () => {
-            const users = await base44.entities.User.filter({ email: { $in: allMembers } });
-            const names = {};
-            users.forEach(u => {
-                names[u.email] = u.display_name || u.full_name || u.email;
-            });
-            setUserNames(names);
-        };
-        fetchUserNames();
-    }, [allMembers.join(',')]);
-
-    const getUserName = (email) => userNames[email] || email;
+    const getUserName = (userId) => {
+        const member = members.find(m => m.id === userId);
+        return member ? member.name : "Unknown User";
+    };
 
     const getPercentage = (amount) => {
         if (totalIncome === 0) return 0;
-        return ((amount / totalIncome) * 100).toFixed(1);
+        return Math.round((amount / totalIncome) * 100);
     };
 
     const handleSaveIncome = async () => {
         const amount = parseFloat(newAmount);
         if (isNaN(amount) || amount <= 0) return;
 
-        const targetEmail = addingForEmail || user.email;
-        const existingIncome = incomes.find(i => i.user_email === targetEmail);
+        const targetUserId = addingForUserId || user.id;
+        const existingIncome = incomes.find(i => i.user === targetUserId);
 
         if (existingIncome) {
             await base44.entities.Income.update(existingIncome.id, { amount });
         } else {
             await base44.entities.Income.create({
                 group_id: group.id,
-                user_email: targetEmail,
-                user_name: targetEmail,
+                user: targetUserId,
                 amount,
             });
         }
         setAddingIncome(false);
         setNewAmount("");
-        setAddingForEmail("");
+        setAddingForUserId("");
         onRefresh();
     };
 
@@ -72,37 +59,24 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
         onRefresh();
     };
 
-    const handleSaveName = async (email) => {
+    const handleSaveName = async (userId) => {
         if (!editNameValue.trim()) return;
 
-        // Update current user if it's their own name, otherwise update via User entity
-        if (email === user.email) {
-            await base44.auth.updateMe({ display_name: editNameValue.trim() });
+        // Update current user if it's their own name, otherwise update via Users entity
+        if (userId === user.id) {
+            await base44.auth.updateMe({ full_name: editNameValue.trim() });
         } else {
-            // Find the user by email and update their display_name
-            const users = await base44.entities.User.filter({ email });
-            if (users.length > 0) {
-                await base44.entities.User.update(users[0].id, { display_name: editNameValue.trim() });
-            }
+            await base44.entities.Users.update(userId, { name: editNameValue.trim() });
         }
 
-        setEditingNameEmail(null);
+        setEditingNameUserId(null);
         setEditNameValue("");
-
-        // Refresh user data to get updated names
-        const allUsers = await base44.entities.User.filter({ email: { $in: allMembers } });
-        const names = {};
-        allUsers.forEach(u => {
-            names[u.email] = u.display_name || u.full_name || u.email;
-        });
-        setUserNames(names);
-
         onRefresh();
     };
 
     const memberIncomeMap = {};
     incomes.forEach((i) => {
-        memberIncomeMap[i.user_email] = i;
+        memberIncomeMap[i.user] = i;
     });
 
     return (
@@ -119,7 +93,7 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                             onClick={() => {
                                 setAddingIncome(true);
                                 setNewAmount("");
-                                setAddingForEmail("");
+                                setAddingForUserId("");
                             }}
 
                         >
@@ -132,20 +106,20 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                 {addingIncome && (
                     <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
                         {isOwner && (
-                            <Select value={addingForEmail} onValueChange={setAddingForEmail}>
+                            <Select value={addingForUserId} onValueChange={setAddingForUserId}>
                                 <SelectTrigger className="w-48">
                                     <SelectValue placeholder="Select member" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {allMembers.map(email => (
-                                        <SelectItem key={email} value={email}>{email}</SelectItem>
+                                    {members.map(m => (
+                                        <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         )}
                         {!isOwner && (
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-0 truncate">
-                                {getUserName(user.email)}
+                                {getUserName(user.id)}
                             </span>
                         )}
                         <Input
@@ -156,31 +130,31 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                             className="w-36"
                             autoFocus={!isOwner}
                         />
-                        <Button size="icon" variant="ghost" onClick={handleSaveIncome} disabled={isOwner && !addingForEmail}>
+                        <Button size="icon" variant="ghost" onClick={handleSaveIncome} disabled={isOwner && !addingForUserId}>
                             <Check className="w-4 h-4 text-green-600" />
                         </Button>
                         <Button size="icon" variant="ghost" onClick={() => {
                             setAddingIncome(false);
-                            setAddingForEmail("");
+                            setAddingForUserId("");
                         }}>
                             <X className="w-4 h-4 text-slate-400" />
                         </Button>
                     </div>
                 )}
 
-                {allMembers.map((email) => {
-                    const income = memberIncomeMap[email];
+                {members.map((member) => {
+                    const income = memberIncomeMap[member.id];
                     if (!income) {
-                        if (email === user.email && addingIncome) return null;
+                        if (member.id === user.id && addingIncome) return null;
                         return (
-                            <div key={email} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                            <div key={member.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
                                         <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
-                                            {email[0].toUpperCase()}
+                                            {member.name[0].toUpperCase()}
                                         </span>
                                     </div>
-                                    <span className="text-sm text-slate-500 dark:text-slate-400">{getUserName(email)}</span>
+                                    <span className="text-sm text-slate-500 dark:text-slate-400">{member.name}</span>
                                 </div>
                                 <span className="text-xs text-slate-400 dark:text-slate-500">No income set</span>
                             </div>
@@ -188,7 +162,7 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                     }
 
                     const isEditing = editingId === income.id;
-                    const canEdit = income.user_email === user.email || isOwner;
+                    const canEdit = member.id === user.id || isOwner;
 
                     return (
                         <div
@@ -198,11 +172,11 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                             <div className="flex items-center gap-3 min-w-0">
                                 <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
                                     <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                                        {getUserName(income.user_email)[0].toUpperCase()}
+                                        {member.name[0].toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    {editingNameEmail === income.user_email ? (
+                                    {editingNameUserId === member.id ? (
                                         <div className="flex items-center gap-2">
                                             <Input
                                                 value={editNameValue}
@@ -211,27 +185,27 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                                                 placeholder="Enter name"
                                                 autoFocus
                                             />
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleSaveName(income.user_email)}>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleSaveName(member.id)}>
                                                 <Check className="w-3 h-3 text-green-600" />
                                             </Button>
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingNameEmail(null)}>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingNameUserId(null)}>
                                                 <X className="w-3 h-3 text-slate-400" />
                                             </Button>
                                         </div>
                                     ) : (
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                                                {getUserName(income.user_email)}
-                                                {income.user_email === user.email && <span className="text-indigo-500 dark:text-indigo-400 ml-1">(you)</span>}
+                                                {member.name}
+                                                {member.id === user.id && <span className="text-indigo-500 dark:text-indigo-400 ml-1">(you)</span>}
                                             </p>
-                                            {(income.user_email === user.email || isOwner) && (
+                                            {(member.id === user.id || isOwner) && (
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
                                                     className="h-6 w-6"
                                                     onClick={() => {
-                                                        setEditingNameEmail(income.user_email);
-                                                        setEditNameValue(getUserName(income.user_email));
+                                                        setEditingNameUserId(member.id);
+                                                        setEditNameValue(member.name);
                                                     }}
                                                 >
                                                     <User className="w-3 h-3 text-slate-400" />
@@ -262,7 +236,7 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                                     <>
                                         <div className="text-right">
                                             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                                ${income.amount.toLocaleString()}
+                                                ${Number(income.amount).toLocaleString()}
                                             </p>
                                             <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
                                                 {getPercentage(income.amount)}%
@@ -299,17 +273,17 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                                 const pct = (income.amount / totalIncome) * 100;
                                 const colors = [
                                     "bg-indigo-500",
-                                    "bg-violet-500",
-                                    "bg-rose-400",
-                                    "bg-amber-400",
                                     "bg-emerald-500",
+                                    "bg-rose-500",
+                                    "bg-amber-500",
+                                    "bg-sky-500",
                                 ];
                                 return (
                                     <div
                                         key={income.id}
                                         className={`${colors[idx % colors.length]} transition-all duration-500`}
                                         style={{ width: `${pct}%` }}
-                                        title={`${income.user_name || income.user_email}: ${pct.toFixed(1)}%`}
+                                        title={`${getUserName(income.user)}: ${Math.round(pct)}%`}
                                     />
                                 );
                             })}
@@ -318,15 +292,15 @@ export default function IncomeSection({ group, incomes, user, onRefresh }) {
                             {incomes.map((income, idx) => {
                                 const colors = [
                                     "bg-indigo-500",
-                                    "bg-violet-500",
-                                    "bg-rose-400",
-                                    "bg-amber-400",
                                     "bg-emerald-500",
+                                    "bg-rose-500",
+                                    "bg-amber-500",
+                                    "bg-sky-500",
                                 ];
                                 return (
                                     <div key={income.id} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
                                         <div className={`w-2.5 h-2.5 rounded-full ${colors[idx % colors.length]}`} />
-                                        {getUserName(income.user_email)}
+                                        {getUserName(income.user)}
                                     </div>
                                 );
                             })}

@@ -17,7 +17,7 @@ A collaborative financial tracking application migrated from Base44 to a standal
 
 - `src/api/`:
   - `client.js`: Local Storage-based mock backend that implements the Base44 SDK interface.
-  - `base44Client.js`: Re-exports the mock client for compatibility with existing code.
+  - `client.js`: Re-exports the mock client for compatibility with existing code.
 - `src/components/`:
   - `ui/`: Base UI components.
   - `groups/`: Group management components.

@@ -1,22 +1,68 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Filter } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
-export default function SettlementSection({ group, expenses, incomes, categories }) {
+export default function SettlementSection({ group, expenses, incomes, categories, members }) {
+    const [selectedCategoryId, setSelectedCategoryId] = useState("all");
+
     const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
-    const totalBudget = categories.reduce((sum, c) => sum + c.amount, 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    const filteredCategories = selectedCategoryId === "all"
+        ? categories
+        : categories.filter(c => c.id === selectedCategoryId);
+
+    const totalBudget = filteredCategories.reduce((sum, c) => sum + Number(c.amount), 0);
+
+    const filteredExpenses = selectedCategoryId === "all"
+        ? expenses
+        : expenses.filter(e => e.category_id === selectedCategoryId);
+
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+
+    const getUserName = (userId) => {
+        const member = members.find(m => m.id === userId);
+        return member ? member.name : "Unknown User";
+    };
+
+    const getCategoryMembers = (cat) => {
+        if (!cat.members || cat.members.length === 0) {
+            return members.map(m => m.id);
+        }
+        return cat.members;
+    };
+
+    const getShareForCategory = (income, category) => {
+        const catMembers = getCategoryMembers(category);
+        if (!catMembers.includes(income.user)) return 0;
+
+        const relevantIncomes = incomes.filter(i => catMembers.includes(i.user));
+        const relevantTotalIncome = relevantIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+
+        if (relevantTotalIncome === 0) return 0;
+        return (income.amount / relevantTotalIncome) * Number(category.amount);
+    };
 
     // Calculate spending summary per member
     const memberSummary = incomes.map(income => {
-        const budgetShare = totalIncome > 0 ? (income.amount / totalIncome) * totalBudget : 0;
-        const spent = expenses
-            .filter(e => e.paid_by_email === income.user_email)
-            .reduce((sum, e) => sum + e.amount, 0);
+        // Sum shares from each filtered category
+        const budgetShare = filteredCategories.reduce((sum, cat) => {
+            return sum + getShareForCategory(income, cat);
+        }, 0);
+
+        const spent = filteredExpenses
+            .filter(e => e.paid_by === income.user)
+            .reduce((sum, e) => sum + Number(e.amount), 0);
 
         return {
-            email: income.user_email,
-            name: income.user_name || income.user_email,
+            id: income.user,
+            name: getUserName(income.user),
             budgetShare,
             spent,
             difference: spent - budgetShare,
@@ -26,10 +72,28 @@ export default function SettlementSection({ group, expenses, incomes, categories
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
             <CardHeader className="pb-4">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
-                    <TrendingUp className="w-5 h-5 text-emerald-500" />
-                    Spending Overview
-                </CardTitle>
+                <div className="flex items-center justify-between gap-4">
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <TrendingUp className="w-5 h-5 text-emerald-500" />
+                        Spending Overview
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        <Filter className="w-4 h-4 text-slate-400" />
+                        <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                            <SelectTrigger className="h-8 w-[140px] text-xs">
+                                <SelectValue placeholder="All Categories" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Categories</SelectItem>
+                                {categories.map((cat) => (
+                                    <SelectItem key={cat.id} value={cat.id}>
+                                        {cat.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent>
                 {expenses.length === 0 ? (
@@ -42,11 +106,11 @@ export default function SettlementSection({ group, expenses, incomes, categories
                         <div className="grid grid-cols-2 gap-3">
                             <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Budget</div>
-                                <div className="font-bold text-slate-900 dark:text-slate-100">${totalBudget.toFixed(2)}</div>
+                                <div className="font-bold text-slate-900 dark:text-slate-100">${Math.round(totalBudget).toLocaleString()}</div>
                             </div>
                             <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                                 <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Total Spent</div>
-                                <div className="font-bold text-slate-900 dark:text-slate-100">${totalExpenses.toFixed(2)}</div>
+                                <div className="font-bold text-slate-900 dark:text-slate-100">${Math.round(totalExpenses).toLocaleString()}</div>
                             </div>
                         </div>
 
@@ -63,7 +127,7 @@ export default function SettlementSection({ group, expenses, incomes, categories
 
                                     return (
                                         <div
-                                            key={member.email}
+                                            key={member.id}
                                             className="p-3 rounded-lg border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-700/50"
                                         >
                                             <div className="flex items-center justify-between mb-2">
@@ -80,23 +144,23 @@ export default function SettlementSection({ group, expenses, incomes, categories
                                                 {isOverBudget && (
                                                     <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                                                         <TrendingUp className="w-3 h-3" />
-                                                        <span className="font-medium">${Math.abs(member.difference).toFixed(2)} over</span>
+                                                        <span className="font-medium">${Math.round(Math.abs(member.difference)).toLocaleString()} over</span>
                                                     </div>
                                                 )}
                                                 {isUnderBudget && (
                                                     <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                                                         <TrendingDown className="w-3 h-3" />
-                                                        <span className="font-medium">${Math.abs(member.difference).toFixed(2)} under</span>
+                                                        <span className="font-medium">${Math.round(Math.abs(member.difference)).toLocaleString()} under</span>
                                                     </div>
                                                 )}
                                             </div>
 
                                             <div className="flex items-center justify-between text-xs mb-1.5">
                                                 <span className="text-slate-500 dark:text-slate-400">
-                                                    Budget: ${member.budgetShare.toFixed(2)}
+                                                    Budget: ${Math.round(member.budgetShare).toLocaleString()}
                                                 </span>
                                                 <span className="text-slate-600 dark:text-slate-300 font-medium">
-                                                    Spent: ${member.spent.toFixed(2)}
+                                                    Spent: ${Math.round(member.spent).toLocaleString()}
                                                 </span>
                                             </div>
 
