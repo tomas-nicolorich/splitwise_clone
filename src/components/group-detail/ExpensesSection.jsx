@@ -18,17 +18,17 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { base44 } from "@/api/client";
-import { Receipt, Plus, Trash2, Pencil } from "lucide-react";
+import { Receipt, Plus, Trash2, Pencil, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 
-export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh }) {
+export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh, loading }) {
     const [showAdd, setShowAdd] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
     const [categoryId, setCategoryId] = useState("");
     const [paidByUserId, setPaidByUserId] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loadingAction, setLoadingAction] = useState(false);
 
     const isOwner = group.members?.[0] === user.id;
 
@@ -44,7 +44,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
 
         const targetUserId = isOwner ? paidByUserId : user.id;
 
-        setLoading(true);
+        setLoadingAction(true);
 
         try {
             if (editingExpense) {
@@ -70,12 +70,12 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
             setCategoryId("");
             setPaidByUserId("");
             setEditingExpense(null);
-            setLoading(false);
+            setLoadingAction(false);
             setShowAdd(false);
             onRefresh();
         } catch (e) {
             console.error("Error saving expense:", e);
-            setLoading(false);
+            setLoadingAction(false);
         }
     };
 
@@ -94,7 +94,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
     };
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
             <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
@@ -106,7 +106,12 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 min-h-[100px]">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                )}
                 {expenses.length === 0 ? (
                     <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
                         No expenses yet. Add one to track shared costs.

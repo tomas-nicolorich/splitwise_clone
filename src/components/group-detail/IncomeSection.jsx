@@ -3,10 +3,10 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Pencil, Check, X, User } from "lucide-react";
+import { DollarSign, Pencil, Check, X, User, Loader2 } from "lucide-react";
 import { base44 } from "@/api/client";
 
-export default function IncomeSection({ group, incomes, user, members, onRefresh }) {
+export default function IncomeSection({ group, incomes, user, members, onRefresh, onRefreshMembers, loading }) {
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
     const [addingIncome, setAddingIncome] = useState(false);
@@ -71,7 +71,7 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
 
         setEditingNameUserId(null);
         setEditNameValue("");
-        onRefresh();
+        onRefreshMembers();
     };
 
     const memberIncomeMap = {};
@@ -82,7 +82,7 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
     const activeIncomes = incomes.filter(i => (i.amount || 0) > 0);
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
             <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
@@ -105,7 +105,12 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-2 sm:space-y-3">
+            <CardContent className="p-4 pt-0 space-y-2 sm:space-y-3 min-h-[100px]">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                )}
                 {addingIncome && (
                     <div className="flex items-center gap-2 p-2 sm:p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
                         {isOwner && (

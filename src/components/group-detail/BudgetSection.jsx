@@ -12,14 +12,23 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/client";
-import { LayoutGrid, Plus, Trash2, Users } from "lucide-react";
+import { LayoutGrid, Plus, Trash2, Users, Pencil, Smile, Loader2 } from "lucide-react";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
 
-export default function BudgetSection({ group, categories, incomes, expenses, members, onRefresh }) {
+const EMOJIS = ["🏠", "🛒", "🔌", "🚗", "🍔", "🍿", "🏥", "💡", "🛡️", "📱", "🧹", "🎒", "🎁", "🐾", "✈️"];
+
+export default function BudgetSection({ group, categories, incomes, expenses, members, onRefresh, loading }) {
     const [showAdd, setShowAdd] = useState(false);
+    const [editingCategory, setEditingCategory] = useState(null);
     const [catName, setCatName] = useState("");
     const [catAmount, setCatAmount] = useState("");
+    const [catIcon, setCatIcon] = useState("📁");
     const [selectedMembers, setSelectedMembers] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [loadingAction, setLoadingAction] = useState(false);
 
     const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
@@ -55,19 +64,44 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
     const handleAddCategory = async () => {
         const amount = parseFloat(catAmount);
         if (!catName.trim() || isNaN(amount) || amount <= 0) return;
-        setLoading(true);
-        await base44.entities.BudgetCategory.create({
-            group_id: group.id,
-            name: catName.trim(),
-            amount,
-            members: selectedMembers.length > 0 ? selectedMembers : [],
-        });
+        setLoadingAction(true);
+        if (editingCategory) {
+            await base44.entities.BudgetCategory.update(editingCategory.id, {
+                name: catName.trim(),
+                amount,
+                icon: catIcon,
+                members: selectedMembers.length > 0 ? selectedMembers : [],
+            });
+        } else {
+            await base44.entities.BudgetCategory.create({
+                group_id: group.id,
+                name: catName.trim(),
+                amount,
+                icon: catIcon,
+                members: selectedMembers.length > 0 ? selectedMembers : [],
+            });
+        }
+        resetForm();
+        setLoadingAction(false);
+        setShowAdd(false);
+        setEditingCategory(null);
+        onRefresh();
+    };
+
+    const resetForm = () => {
         setCatName("");
         setCatAmount("");
+        setCatIcon("📁");
         setSelectedMembers([]);
-        setLoading(false);
-        setShowAdd(false);
-        onRefresh();
+    };
+
+    const handleEditClick = (cat) => {
+        setEditingCategory(cat);
+        setCatName(cat.name);
+        setCatAmount(cat.amount.toString());
+        setCatIcon(cat.icon || "📁");
+        setSelectedMembers(cat.members || []);
+        setShowAdd(true);
     };
 
     const toggleMember = (memberId) => {
@@ -88,19 +122,28 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
     const totalBudget = categories.reduce((sum, c) => sum + (c.amount || 0), 0);
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
+        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
             <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
                         <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
                         Budget Categories
                     </CardTitle>
-                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => {
+                        setEditingCategory(null);
+                        resetForm();
+                        setShowAdd(true);
+                    }}>
                         <Plus className="w-3.5 h-3.5 mr-1" /> Add
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent className="p-4 pt-0">
+            <CardContent className="p-4 pt-0 min-h-[100px]">
+                {loading && (
+                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                )}
                 {categories.length === 0 ? (
                     <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
                         No budget categories yet. Add one to see how expenses should be split.
@@ -115,27 +158,40 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                             return (
                                 <div key={cat.id} className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
                                     <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 bg-slate-50 dark:bg-slate-700/50">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">{cat.name}</span>
-                                            {cat.members && cat.members.length > 0 && (
-                                                <span className="text-[9px] text-slate-500 flex items-center gap-1">
-                                                    <Users className="w-2.5 h-2.5" />
-                                                    {cat.members.length} members
-                                                </span>
-                                            )}
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <span className="text-xl sm:text-2xl shrink-0">{cat.icon || "📁"}</span>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{cat.name}</span>
+                                                {cat.members && cat.members.length > 0 && (
+                                                    <span className="text-[9px] text-slate-500 flex items-center gap-1">
+                                                        <Users className="w-2.5 h-2.5" />
+                                                        {cat.members.length} members
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
                                             <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
                                                 ${Number(cat.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
-                                            <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-6 w-6 sm:h-7 sm:w-7"
-                                                onClick={() => base44.entities.BudgetCategory.delete(cat.id).then(onRefresh)}
-                                            >
-                                                <Trash2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-red-500" />
-                                            </Button>
+                                            <div className="flex items-center">
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-6 w-6 sm:h-7 sm:w-7"
+                                                    onClick={() => handleEditClick(cat)}
+                                                >
+                                                    <Pencil className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-indigo-500" />
+                                                </Button>
+                                                <Button
+                                                    size="icon"
+                                                    variant="ghost"
+                                                    className="h-6 w-6 sm:h-7 sm:w-7"
+                                                    onClick={() => base44.entities.BudgetCategory.delete(cat.id).then(onRefresh)}
+                                                >
+                                                    <Trash2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-red-500" />
+                                                </Button>
+                                            </div>
                                         </div>
                                     </div>
                                     {relevantIncomes.length > 0 && relevantTotalIncome > 0 && (
@@ -232,20 +288,37 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                 )}
             </CardContent>
 
-            <Dialog open={showAdd} onOpenChange={setShowAdd}>
+            <Dialog open={showAdd} onOpenChange={(val) => {
+                setShowAdd(val);
+                if (!val) setEditingCategory(null);
+            }}>
                 <DialogContent className="sm:max-w-md dark:bg-slate-800 dark:border-slate-700">
                     <DialogHeader>
-                        <DialogTitle className="dark:text-white">Add Budget Category</DialogTitle>
+                        <DialogTitle className="dark:text-white">
+                            {editingCategory ? "Edit Budget Category" : "Add Budget Category"}
+                        </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <Label className="dark:text-slate-300">Category Name</Label>
-                            <Input
-                                placeholder="e.g. Rent, Groceries, Utilities"
-                                value={catName}
-                                onChange={(e) => setCatName(e.target.value)}
-                                className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
-                            />
+                        <div className="flex items-end gap-3">
+                            <div className="space-y-2 flex-1">
+                                <Label className="dark:text-slate-300">Category Name</Label>
+                                <Input
+                                    placeholder="e.g. Rent, Groceries, Utilities"
+                                    value={catName}
+                                    onChange={(e) => setCatName(e.target.value)}
+                                    className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="dark:text-slate-300">Icon</Label>
+                                <Input
+                                    value={catIcon}
+                                    onChange={(e) => setCatIcon(e.target.value)}
+                                    placeholder="📁"
+                                    className="w-12 h-10 p-0 text-center text-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                                    maxLength={2}
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label className="dark:text-slate-300">Monthly Amount</Label>
@@ -286,7 +359,7 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                             disabled={!catName.trim() || !catAmount || loading}
                             className="bg-indigo-600 hover:bg-indigo-700"
                         >
-                            {loading ? "Adding..." : "Add Category"}
+                            {loading ? "Saving..." : (editingCategory ? "Save Changes" : "Add Category")}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -294,3 +367,4 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
         </Card>
     );
 }
+

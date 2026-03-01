@@ -40,8 +40,7 @@ export default function GroupDetail() {
         enabled: !!groupId,
     });
 
-    // Fetch member details
-    const { data: members = [] } = useQuery({
+    const { data: members = [], isFetching: isFetchingMembers } = useQuery({
         queryKey: ["members", group?.members],
         queryFn: async () => {
             if (!group?.members?.length) return [];
@@ -50,30 +49,37 @@ export default function GroupDetail() {
         enabled: !!group?.members?.length,
     });
 
-    const { data: incomes = [] } = useQuery({
+    const { data: incomes = [], isFetching: isFetchingIncomes } = useQuery({
         queryKey: ["incomes", groupId],
         queryFn: () => base44.entities.Income.filter({ group_id: groupId }),
         enabled: !!groupId,
     });
 
-    const { data: categories = [] } = useQuery({
+    const { data: categories = [], isFetching: isFetchingCategories } = useQuery({
         queryKey: ["categories", groupId],
         queryFn: () => base44.entities.BudgetCategory.filter({ group_id: groupId }),
         enabled: !!groupId,
     });
 
-    const { data: expenses = [] } = useQuery({
+    const { data: expenses = [], isFetching: isFetchingExpenses } = useQuery({
         queryKey: ["expenses", groupId],
         queryFn: () => base44.entities.Expense.filter({ group_id: groupId }, "-date"),
         enabled: !!groupId,
     });
 
-    const refreshAll = () => {
+    const refreshIncomes = () => queryClient.invalidateQueries({ queryKey: ["incomes", groupId] });
+    const refreshCategories = () => queryClient.invalidateQueries({ queryKey: ["categories", groupId] });
+    const refreshExpenses = () => queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
+    const refreshMembers = () => {
         queryClient.invalidateQueries({ queryKey: ["group", groupId] });
         queryClient.invalidateQueries({ queryKey: ["members", group?.members] });
-        queryClient.invalidateQueries({ queryKey: ["incomes", groupId] });
-        queryClient.invalidateQueries({ queryKey: ["categories", groupId] });
-        queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
+    };
+
+    const refreshAll = () => {
+        refreshIncomes();
+        refreshCategories();
+        refreshExpenses();
+        refreshMembers();
     };
 
     const handleDeleteGroup = async () => {
@@ -181,7 +187,9 @@ export default function GroupDetail() {
                         incomes={incomes}
                         user={user}
                         members={members}
-                        onRefresh={refreshAll}
+                        onRefresh={refreshIncomes}
+                        onRefreshMembers={refreshMembers}
+                        loading={isFetchingIncomes || isFetchingMembers}
                     />
                     <ExpensesSection
                         group={group}
@@ -189,7 +197,8 @@ export default function GroupDetail() {
                         categories={categories}
                         user={user}
                         members={members}
-                        onRefresh={refreshAll}
+                        onRefresh={refreshExpenses}
+                        loading={isFetchingExpenses || isFetchingMembers}
                     />
                 </div>
 
@@ -201,7 +210,8 @@ export default function GroupDetail() {
                         incomes={incomes}
                         expenses={expenses}
                         members={members}
-                        onRefresh={refreshAll}
+                        onRefresh={refreshCategories}
+                        loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
                     />
                     <SettlementSection
                         group={group}
@@ -209,9 +219,12 @@ export default function GroupDetail() {
                         incomes={incomes}
                         categories={categories}
                         members={members}
+                        loading={isFetchingIncomes || isFetchingExpenses || isFetchingCategories || isFetchingMembers}
                     />
                 </div>
             </div>
+
+
 
             <InviteMemberDialog
                 open={showInvite}
