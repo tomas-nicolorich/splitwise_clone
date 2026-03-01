@@ -9,10 +9,18 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 
-export default function SettlementSection({ group, expenses = [], incomes = [], categories = [], members = [], loading }) {
+export default function SettlementSection({ group, expenses = [], incomes: rawIncomes = [], categories = [], members = [], loading }) {
+    const incomes = React.useMemo(() => {
+        const map = new Map();
+        (rawIncomes || []).forEach(inc => {
+            if (inc && inc.user) map.set(inc.user.toString(), inc);
+        });
+        return Array.from(map.values());
+    }, [rawIncomes]);
+
     const [selectedCategoryId, setSelectedCategoryId] = useState("all");
 
-    const safeIncomes = Array.isArray(incomes) ? incomes : [];
+    const safeIncomes = incomes;
     const safeExpenses = Array.isArray(expenses) ? expenses : [];
     const safeCategories = Array.isArray(categories) ? categories : [];
     const safeMembers = Array.isArray(members) ? members : [];
@@ -44,26 +52,70 @@ export default function SettlementSection({ group, expenses = [], incomes = [], 
         return cat.members;
     };
 
-    const getShareForCategory = (income, category) => {
-        if (!income || !category || !income.user) return 0;
-        const catMembers = getCategoryMembers(category);
-        if (!catMembers || !Array.isArray(catMembers) || !catMembers.includes(income.user)) return 0;
-
-        const relevantIncomes = safeIncomes.filter(i => i && i.user && catMembers.includes(i.user));
+    // Helper to calculate clean splits consistent with BudgetSection
+    const getCleanSplitsForCategory = (cat) => {
+        const catMembers = getCategoryMembers(cat);
+        const relevantIncomes = safeIncomes.filter(i => catMembers.includes(i.user) && (Number(i.amount) || 0) > 0);
         const relevantTotalIncome = relevantIncomes.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
-        if (relevantTotalIncome === 0) return 0;
-        return ((Number(income.amount) || 0) / relevantTotalIncome) * (Number(category.amount) || 0);
+        if (relevantTotalIncome === 0 || relevantIncomes.length === 0) return [];
+
+        // 1. Rounded percentages
+        let pcts = relevantIncomes.map(income => {
+            const exactPct = (Number(income.amount) / relevantTotalIncome) * 100;
+            return {
+                userId: income.user,
+                exactPct,
+                roundedPct: Math.floor(exactPct),
+                remainder: exactPct - Math.floor(exactPct)
+            };
+        });
+
+        let totalRoundedPct = pcts.reduce((sum, p) => sum + p.roundedPct, 0);
+        let pctDiff = 100 - totalRoundedPct;
+        const sortedPcts = [...pcts].sort((a, b) => b.remainder - a.remainder);
+        for (let i = 0; i < pctDiff; i++) {
+            const target = sortedPcts[i % sortedPcts.length];
+            const p = pcts.find(x => x.userId === target.userId);
+            p.roundedPct += 1;
+        }
+
+        // 2. Rounded shares
+        let targetShares = pcts.map(p => {
+            const targetShare = (p.roundedPct / 100) * Number(cat.amount);
+            return {
+                userId: p.userId,
+                pct: p.roundedPct,
+                targetShare,
+                roundedShare: Math.floor(targetShare),
+                remainder: targetShare - Math.floor(targetShare)
+            };
+        });
+
+        let totalRoundedShare = targetShares.reduce((sum, s) => sum + s.roundedShare, 0);
+        let shareDiff = Math.round(Number(cat.amount)) - totalRoundedShare;
+        const sortedShares = [...targetShares].sort((a, b) => b.remainder - a.remainder);
+        for (let i = 0; i < shareDiff; i++) {
+            const target = sortedShares[i % sortedShares.length];
+            const s = targetShares.find(x => x.userId === target.userId);
+            s.roundedShare += 1;
+        }
+
+        return targetShares.map(s => ({
+            userId: s.userId,
+            share: s.roundedShare,
+            pct: s.pct
+        }));
     };
 
-    // Calculate spending summary per member
+    // Calculate spending summary per member using clean splits
     const memberSummary = safeIncomes
-        .filter(i => i && i.user && (Number(i.amount) || 0) >= 0) // Allow 0, exclude invalid
-        .filter(i => (Number(i.amount) || 0) > 0) // But only show active ones in summary
+        .filter(i => i && i.user && (Number(i.amount) || 0) > 0)
         .map(income => {
-            // Sum shares from each filtered category
             const budgetShare = filteredCategories.reduce((sum, cat) => {
-                return sum + getShareForCategory(income, cat);
+                const splits = getCleanSplitsForCategory(cat);
+                const userSplit = splits.find(s => s.userId === income.user);
+                return sum + (userSplit ? userSplit.share : 0);
             }, 0);
 
             const spent = filteredExpenses
@@ -139,6 +191,7 @@ export default function SettlementSection({ group, expenses = [], incomes = [], 
                                     const isOverBudget = member.difference > 0.001;
                                     const isUnderBudget = member.difference < -0.001;
                                     const percentage = member.budgetShare > 0 ? (member.spent / member.budgetShare) * 100 : 0;
+                                    const percentageDisplay = percentage.toFixed(1);
 
                                     return (
                                         <div
@@ -156,18 +209,21 @@ export default function SettlementSection({ group, expenses = [], incomes = [], 
                                                         {member.name}
                                                     </span>
                                                 </div>
-                                                {isOverBudget && (
-                                                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 shrink-0">
-                                                        <TrendingUp className="w-3 h-3" />
-                                                        <span className="font-medium">${Number(Math.abs(member.difference)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over</span>
-                                                    </div>
-                                                )}
-                                                {isUnderBudget && (
-                                                    <div className="flex items-center gap-1 text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
-                                                        <TrendingDown className="w-3 h-3" />
-                                                        <span className="font-medium">${Number(Math.abs(member.difference)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} under</span>
-                                                    </div>
-                                                )}
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400">{percentageDisplay}% used</span>
+                                                    {isOverBudget && (
+                                                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-amber-600 dark:text-amber-400 shrink-0">
+                                                            <TrendingUp className="w-3 h-3" />
+                                                            <span className="font-medium">${Number(Math.abs(member.difference)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over</span>
+                                                        </div>
+                                                    )}
+                                                    {isUnderBudget && (
+                                                        <div className="flex items-center gap-1 text-[10px] sm:text-xs text-emerald-600 dark:text-emerald-400 shrink-0">
+                                                            <TrendingDown className="w-3 h-3" />
+                                                            <span className="font-medium">${Number(Math.abs(member.difference)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} under</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center justify-between text-[10px] sm:text-xs mb-1 sm:mb-1.5">

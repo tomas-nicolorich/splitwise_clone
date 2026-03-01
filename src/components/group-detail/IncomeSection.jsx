@@ -6,7 +6,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, Pencil, Check, X, User, Loader2 } from "lucide-react";
 import { base44 } from "@/api/client";
 
-export default function IncomeSection({ group, incomes, user, members, onRefresh, onRefreshMembers, loading }) {
+export default function IncomeSection({ group, incomes: rawIncomes, user, members, onRefresh, onRefreshMembers, loading }) {
+    const incomes = React.useMemo(() => {
+        const map = new Map();
+        (rawIncomes || []).forEach(inc => {
+            if (inc && inc.user) map.set(inc.user.toString(), inc);
+        });
+        return Array.from(map.values());
+    }, [rawIncomes]);
+
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
     const [addingIncome, setAddingIncome] = useState(false);
