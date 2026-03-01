@@ -28,14 +28,14 @@ export default async function handler(req, res) {
       case 'me': {
         const { auth_id } = params
         if (!auth_id) return res.status(401).json({ error: 'Unauthorized' })
-        
+
         let user = await prisma.Users.findFirst({
           where: { auth_id }
         })
 
         if (!user) {
           // Auto-create user if they exist in Auth but not in our public schema
-          // We can't easily get the email here without an extra Supabase call, 
+          // We can't easily get the email here without an extra Supabase call,
           // but we can use a placeholder name which SetupProfileModal will then prompt to change.
           try {
             await syncSequence('Users')
@@ -66,9 +66,9 @@ export default async function handler(req, res) {
         if (listError) {
           console.error('List users error:', listError)
         }
-        
+
         const existingAuthUser = listData?.users?.find(u => u.email?.toLowerCase() === email.toLowerCase())
-        
+
         let invitedUser;
         if (existingAuthUser) {
           invitedUser = existingAuthUser

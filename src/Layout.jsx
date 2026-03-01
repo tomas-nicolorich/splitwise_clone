@@ -5,11 +5,13 @@ import { base44 } from "@/api/client";
 import { LogOut, PieChart, Menu, X, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SetupProfileModal from "./components/SetupProfileModal";
+import ProfileModal from "./components/ProfileModal";
 import { useAuth } from "./lib/AuthContext";
 
 export default function Layout({ children, currentPageName }) {
     const { user } = useAuth();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [profileOpen, setProfileOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {
         return localStorage.getItem('darkMode') === 'true';
     });
@@ -60,11 +62,15 @@ export default function Layout({ children, currentPageName }) {
                             </Button>
                             {user && (
                                 <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center">
+                                    <button
+                                        onClick={() => setProfileOpen(true)}
+                                        className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center hover:ring-2 hover:ring-indigo-500 transition-all overflow-hidden"
+                                    >
                                         <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                                             {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
                                         </span>
-                                    </div>
+
+                                    </button>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -78,7 +84,7 @@ export default function Layout({ children, currentPageName }) {
                         </div>
 
                         <button className="sm:hidden" onClick={() => setMenuOpen(!menuOpen)}>
-                            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                            {menuOpen ? <X className="w-5 h-5 text-slate-600 dark:text-slate-300" /> : <Menu className="w-5 h-5 text-slate-600 dark:text-slate-300" />}
                         </button>
                     </div>
                 </div>
@@ -92,6 +98,17 @@ export default function Layout({ children, currentPageName }) {
                         >
                             My Groups
                         </Link>
+                        {user && (
+                            <button
+                                onClick={() => {
+                                    setProfileOpen(true);
+                                    setMenuOpen(false);
+                                }}
+                                className="block w-full text-left py-2 text-sm font-medium text-slate-700 dark:text-slate-300"
+                            >
+                                Profile
+                            </button>
+                        )}
                         <button
                             onClick={() => setDarkMode(!darkMode)}
                             className="flex items-center gap-2 py-2 text-sm font-medium text-slate-600 dark:text-slate-300"
@@ -113,6 +130,7 @@ export default function Layout({ children, currentPageName }) {
                 {children}
             </main>
             <SetupProfileModal />
+            <ProfileModal open={profileOpen} onOpenChange={setProfileOpen} />
         </div>
     );
 }

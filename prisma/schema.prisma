@@ -122,6 +122,7 @@ model Users {
   name       String
   created_at DateTime  @default(dbgenerated("(now() AT TIME ZONE 'utc'::text)")) @db.Timestamptz(6)
   auth_id    String?   @db.Uuid
+  icon       String?
   Expense    Expense[]
   Income     Income[]
   users      users?    @relation(fields: [auth_id], references: [id], onDelete: Cascade)

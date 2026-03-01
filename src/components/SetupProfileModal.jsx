@@ -11,9 +11,16 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Smile } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "@/lib/supabase-client";
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover";
+
+const EMOJIS = ["👤", "🐱", "🐶", "🦊", "🦁", "🐸", "🐵", "🦄", "🌈", "⭐", "🔥", "💎", "🍕", "🎨", "🚀"];
 
 export default function SetupProfileModal() {
     const { user } = useAuth();
@@ -27,8 +34,8 @@ export default function SetupProfileModal() {
         if (user) {
             // If name is just email prefix or "New User", or if it contains @ (email fallback)
             // we should ask for a real name.
-            const isGeneric = !user.name || 
-                             user.name === 'New User' || 
+            const isGeneric = !user.name ||
+                             user.name === 'New User' ||
                              user.name === user.email?.split('@')[0] ||
                              user.name.includes('@');
 
@@ -60,9 +67,11 @@ export default function SetupProfileModal() {
         setLoading(true);
 
         try {
-            // Update name in DB
-            await base44.auth.updateMe({ full_name: name.trim() });
-            
+            // Update name and icon in DB
+            await base44.auth.updateMe({
+                full_name: name.trim()
+            });
+
             // Update password in Supabase
             const { error: passwordError } = await supabase.auth.updateUser({
                 password: password
@@ -72,7 +81,7 @@ export default function SetupProfileModal() {
 
             toast.success("Profile updated!");
             setOpen(false);
-            // Refresh page to update name everywhere
+            // Refresh page to update everything
             window.location.reload();
         } catch (e) {
             console.error("Error updating profile:", e);
@@ -86,8 +95,8 @@ export default function SetupProfileModal() {
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogContent 
-                className="sm:max-w-md dark:bg-slate-800 dark:border-slate-700" 
+            <DialogContent
+                className="sm:max-w-md dark:bg-slate-800 dark:border-slate-700"
                 onPointerDownOutside={(e) => e.preventDefault()}
                 onEscapeKeyDown={(e) => e.preventDefault()}
             >

@@ -222,7 +222,7 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                                 <div key={cat.id} className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
                                     <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 bg-slate-50 dark:bg-slate-700/50">
                                         <div className="flex items-center gap-2.5 min-w-0">
-                                            <span className="text-xl sm:text-2xl shrink-0">{cat.icon || "📁"}</span>
+                                            <span className="text-xl sm:text-2xl shrink-0">{cat.icon || ""}</span>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{cat.name}</span>
                                                 {cat.members && cat.members.length > 0 && (
@@ -277,8 +277,8 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                                                             <div className="flex items-center gap-2 min-w-0">
                                                                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center shrink-0">
                                                                     <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-300">
-                                                                        {getUserName(split.userId)[0].toUpperCase()}
-                                                                    </span>
+                                                                            {getUserName(split.userId)[0].toUpperCase()}
+                                                                        </span>
                                                                 </div>
                                                                 <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                                                                     {getUserName(split.userId)}
