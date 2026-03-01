@@ -173,40 +173,44 @@ export default function GroupDetail() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-                <IncomeSection
-                    group={group}
-                    incomes={incomes}
-                    user={user}
-                    members={members}
-                    onRefresh={refreshAll}
-                />
-                <BudgetSection
-                    group={group}
-                    categories={categories}
-                    incomes={incomes}
-                    expenses={expenses}
-                    members={members}
-                    onRefresh={refreshAll}
-                />
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+                {/* Left Column: Data Entry */}
+                <div className="space-y-4 sm:space-y-6">
+                    <IncomeSection
+                        group={group}
+                        incomes={incomes}
+                        user={user}
+                        members={members}
+                        onRefresh={refreshAll}
+                    />
+                    <ExpensesSection
+                        group={group}
+                        expenses={expenses}
+                        categories={categories}
+                        user={user}
+                        members={members}
+                        onRefresh={refreshAll}
+                    />
+                </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <ExpensesSection
-                    group={group}
-                    expenses={expenses}
-                    categories={categories}
-                    user={user}
-                    members={members}
-                    onRefresh={refreshAll}
-                />
-                <SettlementSection
-                    group={group}
-                    expenses={expenses}
-                    incomes={incomes}
-                    categories={categories}
-                    members={members}
-                />
+                {/* Right Column: Analysis & Planning */}
+                <div className="space-y-4 sm:space-y-6">
+                    <BudgetSection
+                        group={group}
+                        categories={categories}
+                        incomes={incomes}
+                        expenses={expenses}
+                        members={members}
+                        onRefresh={refreshAll}
+                    />
+                    <SettlementSection
+                        group={group}
+                        expenses={expenses}
+                        incomes={incomes}
+                        categories={categories}
+                        members={members}
+                    />
+                </div>
             </div>
 
             <InviteMemberDialog

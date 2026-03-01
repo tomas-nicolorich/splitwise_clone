@@ -95,18 +95,18 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
 
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
-            <CardHeader className="pb-4">
+            <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <Receipt className="w-5 h-5 text-rose-500" />
+                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
                         Expenses
                     </CardTitle>
-                    <Button size="sm" onClick={() => setShowAdd(true)}>
-                        <Plus className="w-4 h-4 mr-1" /> Add
+                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
                 {expenses.length === 0 ? (
                     <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
                         No expenses yet. Add one to track shared costs.
@@ -118,49 +118,45 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                             return (
                                 <div
                                     key={expense.id}
-                                    className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
+                                    className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
                                 >
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                        <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                                             {expense.description}
                                         </p>
-                                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                                            <span className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                                        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                                            <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
                                                 {category?.name || "Unknown"}
                                             </span>
-                                            <span>•</span>
                                             <span>Paid by {getUserName(expense.paid_by)}</span>
                                             {expense.date && (
-                                                <>
-                                                    <span>•</span>
-                                                    <span>{format(new Date(expense.date), "MMM d, yyyy")}</span>
-                                                </>
+                                                <span className="hidden sm:inline">• {format(new Date(expense.date), "MMM d, yyyy")}</span>
                                             )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 ml-3">
-                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
                                             ${Number(expense.amount).toFixed(2)}
                                         </span>
                                         {(expense.paid_by === user.id || isOwner) && (
-                                            <>
+                                            <div className="flex items-center">
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-7 w-7"
+                                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                                     onClick={() => handleEdit(expense)}
                                                 >
-                                                    <Pencil className="w-3.5 h-3.5 text-slate-400 hover:text-indigo-500" />
+                                                    <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-indigo-500" />
                                                 </Button>
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-7 w-7"
+                                                    className="h-7 w-7 sm:h-8 sm:w-8"
                                                     onClick={() => handleDelete(expense.id)}
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
+                                                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-red-500" />
                                                 </Button>
-                                            </>
+                                            </div>
                                         )}
                                     </div>
                                 </div>

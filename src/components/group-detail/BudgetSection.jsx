@@ -78,61 +78,63 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
         );
     };
 
-    const totalSharePerMember = incomes.map(income => {
-        const share = categories.reduce((sum, cat) => sum + getShare(income, cat), 0);
-        return { userId: income.user, share };
-    });
+    const totalSharePerMember = incomes
+        .filter(i => (i.amount || 0) > 0)
+        .map(income => {
+            const share = categories.reduce((sum, cat) => sum + getShare(income, cat), 0);
+            return { userId: income.user, share };
+        });
 
     const totalBudget = categories.reduce((sum, c) => sum + (c.amount || 0), 0);
 
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
-            <CardHeader className="pb-4">
+            <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <LayoutGrid className="w-5 h-5 text-violet-500" />
+                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <LayoutGrid className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
                         Budget Categories
                     </CardTitle>
-                    <Button size="sm" onClick={() => setShowAdd(true)}>
-                        <Plus className="w-4 h-4 mr-1" /> Add
+                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add
                     </Button>
                 </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
                 {categories.length === 0 ? (
                     <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
                         No budget categories yet. Add one to see how expenses should be split.
                     </p>
                 ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                         {categories.map((cat) => {
                             const catMembers = getCategoryMembers(cat);
-                            const relevantIncomes = incomes.filter(i => catMembers.includes(i.user));
+                            const relevantIncomes = incomes.filter(i => catMembers.includes(i.user) && (i.amount || 0) > 0);
                             const relevantTotalIncome = relevantIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
                             return (
                                 <div key={cat.id} className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
-                                    <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-700/50">
+                                    <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 bg-slate-50 dark:bg-slate-700/50">
                                         <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{cat.name}</span>
+                                            <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200">{cat.name}</span>
                                             {cat.members && cat.members.length > 0 && (
-                                                <span className="text-[10px] text-slate-500 flex items-center gap-1">
+                                                <span className="text-[9px] text-slate-500 flex items-center gap-1">
                                                     <Users className="w-2.5 h-2.5" />
                                                     {cat.members.length} members
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                                                ${Math.round(cat.amount).toLocaleString()}
+                                        <div className="flex items-center gap-1.5 sm:gap-2">
+                                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                                                ${Number(cat.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </span>
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
-                                                className="h-7 w-7"
+                                                className="h-6 w-6 sm:h-7 sm:w-7"
                                                 onClick={() => base44.entities.BudgetCategory.delete(cat.id).then(onRefresh)}
                                             >
-                                                <Trash2 className="w-3.5 h-3.5 text-slate-400 hover:text-red-500" />
+                                                <Trash2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-red-500" />
                                             </Button>
                                         </div>
                                     </div>
@@ -144,45 +146,45 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                                                 const remaining = share - spent;
                                                 const pct = Math.round((income.amount / relevantTotalIncome) * 100);
                                                 const colors = [
-                                                    "text-indigo-600 bg-indigo-50",
-                                                    "text-emerald-600 bg-emerald-50",
-                                                    "text-rose-600 bg-rose-50",
-                                                    "text-amber-600 bg-amber-50",
-                                                    "text-sky-600 bg-sky-50",
+                                                    "text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20",
+                                                    "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20",
+                                                    "text-rose-600 bg-rose-50 dark:bg-rose-900/20",
+                                                    "text-amber-600 bg-amber-50 dark:bg-amber-900/20",
+                                                    "text-sky-600 bg-sky-50 dark:bg-sky-900/20",
                                                 ];
                                                 return (
-                                                    <div key={income.id} className="px-4 py-2.5 space-y-1.5">
-                                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center">
-                                                                    <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-300">
+                                                    <div key={income.id} className="px-3 py-2 sm:px-4 sm:py-2.5 space-y-1">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2 min-w-0">
+                                                                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center shrink-0">
+                                                                    <span className="text-[9px] sm:text-[10px] font-semibold text-slate-500 dark:text-slate-300">
                                                                         {getUserName(income.user)[0].toUpperCase()}
                                                                     </span>
                                                                 </div>
-                                                                <span className="text-sm text-slate-600 dark:text-slate-400">
+                                                                <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
                                                                     {getUserName(income.user)}
                                                                 </span>
                                                             </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[idx % colors.length]}`}>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-medium ${colors[idx % colors.length]}`}>
                                                                     {pct}%
                                                                 </span>
-                                                                <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 w-20 text-right">
-                                                                    ${Math.round(share).toLocaleString()}
+                                                                <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100 w-16 sm:w-24 text-right">
+                                                                    ${Number(share).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                 </span>
                                                             </div>
                                                         </div>
                                                         {spent > 0 && (
-                                                            <div className="pl-0 sm:pl-8">
-                                                                <div className="flex items-center justify-between text-xs">
-                                                                    <span className="text-slate-500 dark:text-slate-400">Spent: ${Math.round(spent).toLocaleString()}</span>
-                                                                    <span className={`font-medium ${remaining >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                        {remaining >= 0 ? `$${Math.round(remaining).toLocaleString()} left` : `$${Math.round(Math.abs(remaining)).toLocaleString()} over`}
+                                                            <div className="pl-7 sm:pl-8">
+                                                                <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                                                                    <span className="text-slate-500 dark:text-slate-400">Spent: ${Number(spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                                    <span className={`font-medium ${remaining >= -0.001 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                        {remaining >= -0.001 ? `$${Number(remaining).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} left` : `$${Number(Math.abs(remaining)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over`}
                                                                     </span>
                                                                 </div>
-                                                                <div className="mt-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                                                                <div className="mt-0.5 sm:mt-1 h-1 sm:h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                                                                     <div
-                                                                        className={`h-full transition-all ${remaining >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                                                        className={`h-full transition-all ${remaining >= -0.001 ? 'bg-emerald-500' : 'bg-red-500'}`}
                                                                         style={{ width: `${Math.min((spent / share) * 100, 100)}%` }}
                                                                     />
                                                                 </div>
@@ -198,13 +200,13 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                         })}
 
                         {/* Summary */}
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                            <div className="flex items-center justify-between mb-3">
-                                <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Monthly Budget</span>
-                                <span className="text-lg font-bold text-slate-900 dark:text-slate-100">${Math.round(totalBudget).toLocaleString()}</span>
+                        <div className="mt-2 pt-3 sm:mt-4 sm:pt-4 border-t border-slate-100 dark:border-slate-700">
+                            <div className="flex items-center justify-between mb-2 sm:mb-3">
+                                <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Total Monthly Budget</span>
+                                <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">${Number(totalBudget).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             {totalSharePerMember.length > 0 && (
-                                <div className="space-y-2">
+                                <div className="space-y-1 sm:space-y-2">
                                     {totalSharePerMember.map((m, idx) => {
                                         const colors = [
                                             "bg-indigo-500",
@@ -214,12 +216,12 @@ export default function BudgetSection({ group, categories, incomes, expenses, me
                                             "bg-sky-500",
                                         ];
                                         return (
-                                            <div key={m.userId} className="flex items-center justify-between text-sm">
-                                                <div className="flex items-center gap-2">
-                                                    <div className={`w-2.5 h-2.5 rounded-full ${colors[idx % colors.length]}`} />
+                                            <div key={m.userId} className="flex items-center justify-between text-xs sm:text-sm">
+                                                <div className="flex items-center gap-1.5 sm:gap-2">
+                                                    <div className={`w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full ${colors[idx % colors.length]}`} />
                                                     <span className="text-slate-600 dark:text-slate-400">{getUserName(m.userId)}</span>
                                                 </div>
-                                                <span className="font-semibold text-slate-900 dark:text-slate-100">${Math.round(m.share).toLocaleString()}/mo</span>
+                                                <span className="font-semibold text-slate-900 dark:text-slate-100">${Number(m.share).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/mo</span>
                                             </div>
                                         );
                                     })}

@@ -30,7 +30,7 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
 
     const handleSaveIncome = async () => {
         const amount = parseFloat(newAmount);
-        if (isNaN(amount) || amount <= 0) return;
+        if (isNaN(amount) || amount < 0) return;
 
         const targetUserId = addingForUserId || user.id;
         const existingIncome = incomes.find(i => i.user === targetUserId);
@@ -52,7 +52,7 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
 
     const handleUpdateIncome = async (incomeId) => {
         const amount = parseFloat(editAmount);
-        if (isNaN(amount) || amount <= 0) return;
+        if (isNaN(amount) || amount < 0) return;
         await base44.entities.Income.update(incomeId, { amount });
         setEditingId(null);
         setEditAmount("");
@@ -79,17 +79,20 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
         memberIncomeMap[i.user] = i;
     });
 
+    const activeIncomes = incomes.filter(i => (i.amount || 0) > 0);
+
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800">
-            <CardHeader className="pb-4">
+            <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <DollarSign className="w-5 h-5 text-indigo-500" />
+                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
                         Income Overview
                     </CardTitle>
                     {!addingIncome && (
                         <Button
                             size="sm"
+                            className="h-8 text-xs sm:h-9 sm:text-sm"
                             onClick={() => {
                                 setAddingIncome(true);
                                 setNewAmount("");
@@ -102,12 +105,12 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                     )}
                 </div>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="p-4 pt-0 space-y-2 sm:space-y-3">
                 {addingIncome && (
-                    <div className="flex items-center gap-2 p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
+                    <div className="flex items-center gap-2 p-2 sm:p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
                         {isOwner && (
                             <Select value={addingForUserId} onValueChange={setAddingForUserId}>
-                                <SelectTrigger className="w-48">
+                                <SelectTrigger className="w-full sm:w-48 h-9 text-sm">
                                     <SelectValue placeholder="Select member" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -122,23 +125,25 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                                 {getUserName(user.id)}
                             </span>
                         )}
-                        <Input
-                            type="number"
-                            placeholder="Monthly income"
-                            value={newAmount}
-                            onChange={(e) => setNewAmount(e.target.value)}
-                            className="w-36"
-                            autoFocus={!isOwner}
-                        />
-                        <Button size="icon" variant="ghost" onClick={handleSaveIncome} disabled={isOwner && !addingForUserId}>
-                            <Check className="w-4 h-4 text-green-600" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => {
-                            setAddingIncome(false);
-                            setAddingForUserId("");
-                        }}>
-                            <X className="w-4 h-4 text-slate-400" />
-                        </Button>
+                        <div className="flex items-center gap-2 w-full sm:w-auto">
+                            <Input
+                                type="number"
+                                placeholder="Monthly income"
+                                value={newAmount}
+                                onChange={(e) => setNewAmount(e.target.value)}
+                                className="flex-1 sm:w-36 h-9 text-sm"
+                                autoFocus={!isOwner}
+                            />
+                            <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={handleSaveIncome} disabled={isOwner && !addingForUserId}>
+                                <Check className="w-4 h-4 text-green-600" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-9 w-9 shrink-0" onClick={() => {
+                                setAddingIncome(false);
+                                setAddingForUserId("");
+                            }}>
+                                <X className="w-4 h-4 text-slate-400" />
+                            </Button>
+                        </div>
                     </div>
                 )}
 
@@ -147,16 +152,16 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                     if (!income) {
                         if (member.id === user.id && addingIncome) return null;
                         return (
-                            <div key={member.id} className="flex items-center justify-between py-3 px-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
-                                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-300">
+                            <div key={member.id} className="flex items-center justify-between py-2 px-3 sm:py-3 sm:px-4 rounded-xl bg-slate-50 dark:bg-slate-700/50">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center shrink-0">
+                                        <span className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-300">
                                             {member.name[0].toUpperCase()}
                                         </span>
                                     </div>
-                                    <span className="text-sm text-slate-500 dark:text-slate-400">{member.name}</span>
+                                    <span className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">{member.name}</span>
                                 </div>
-                                <span className="text-xs text-slate-400 dark:text-slate-500">No income set</span>
+                                <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500">No income set</span>
                             </div>
                         );
                     }
@@ -167,78 +172,78 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                     return (
                         <div
                             key={income.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between py-3 px-4 rounded-xl bg-white dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 gap-2"
+                            className="flex items-center justify-between py-2 px-3 sm:py-3 sm:px-4 rounded-xl bg-white dark:bg-slate-700/50 border border-slate-100 dark:border-slate-700 gap-2"
                         >
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
-                                    <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] sm:text-xs font-semibold text-indigo-700 dark:text-indigo-300">
                                         {member.name[0].toUpperCase()}
                                     </span>
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     {editingNameUserId === member.id ? (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1 sm:gap-2">
                                             <Input
                                                 value={editNameValue}
                                                 onChange={(e) => setEditNameValue(e.target.value)}
-                                                className="h-7 text-sm"
+                                                className="h-7 text-xs sm:text-sm"
                                                 placeholder="Enter name"
                                                 autoFocus
                                             />
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleSaveName(member.id)}>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => handleSaveName(member.id)}>
                                                 <Check className="w-3 h-3 text-green-600" />
                                             </Button>
-                                            <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingNameUserId(null)}>
+                                            <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setEditingNameUserId(null)}>
                                                 <X className="w-3 h-3 text-slate-400" />
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="flex items-center gap-2">
-                                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                                        <div className="flex items-center gap-1 sm:gap-2">
+                                            <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                                                 {member.name}
-                                                {member.id === user.id && <span className="text-indigo-500 dark:text-indigo-400 ml-1">(you)</span>}
+                                                {member.id === user.id && <span className="text-indigo-500 dark:text-indigo-400 ml-0.5 sm:ml-1">(you)</span>}
                                             </p>
                                             {(member.id === user.id || isOwner) && (
                                                 <Button
                                                     size="icon"
                                                     variant="ghost"
-                                                    className="h-6 w-6"
+                                                    className="h-5 w-5 sm:h-6 sm:w-6"
                                                     onClick={() => {
                                                         setEditingNameUserId(member.id);
                                                         setEditNameValue(member.name);
                                                     }}
                                                 >
-                                                    <User className="w-3 h-3 text-slate-400" />
+                                                    <User className="w-2.5 h-2.5 sm:w-3 h-3 text-slate-400" />
                                                 </Button>
                                             )}
                                         </div>
                                     )}
                                 </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3">
                                 {isEditing ? (
                                     <>
                                         <Input
                                             type="number"
                                             value={editAmount}
                                             onChange={(e) => setEditAmount(e.target.value)}
-                                            className="w-28"
+                                            className="w-20 sm:w-28 h-8 text-xs sm:text-sm"
                                             autoFocus
                                         />
-                                        <Button size="icon" variant="ghost" onClick={() => handleUpdateIncome(income.id)}>
-                                            <Check className="w-4 h-4 text-green-600" />
+                                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleUpdateIncome(income.id)}>
+                                            <Check className="w-3.5 h-3.5 text-green-600" />
                                         </Button>
-                                        <Button size="icon" variant="ghost" onClick={() => setEditingId(null)}>
-                                            <X className="w-4 h-4 text-slate-400" />
+                                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setEditingId(null)}>
+                                            <X className="w-3.5 h-3.5 text-slate-400" />
                                         </Button>
                                     </>
                                 ) : (
                                     <>
                                         <div className="text-right">
-                                            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                                            <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-slate-100">
                                                 ${Number(income.amount).toLocaleString()}
                                             </p>
-                                            <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                                            <p className="text-[10px] sm:text-xs text-indigo-600 dark:text-indigo-400 font-medium">
                                                 {getPercentage(income.amount)}%
                                             </p>
                                         </div>
@@ -246,12 +251,13 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                                             <Button
                                                 size="icon"
                                                 variant="ghost"
+                                                className="h-7 w-7 sm:h-8 sm:w-8"
                                                 onClick={() => {
                                                     setEditingId(income.id);
                                                     setEditAmount(income.amount.toString());
                                                 }}
                                             >
-                                                <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                                                <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
                                             </Button>
                                         )}
                                     </>
@@ -262,14 +268,14 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                 })}
 
                 {totalIncome > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <div className="mt-2 pt-3 sm:mt-4 sm:pt-4 border-t border-slate-100 dark:border-slate-700">
                         <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Household Income</span>
-                            <span className="text-lg font-bold text-slate-900 dark:text-slate-100">${totalIncome.toLocaleString()}</span>
+                            <span className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">Total Household Income</span>
+                            <span className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100">${totalIncome.toLocaleString()}</span>
                         </div>
                         {/* Percentage bar */}
-                        <div className="mt-3 h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
-                            {incomes.map((income, idx) => {
+                        <div className="mt-2 sm:mt-3 h-2 sm:h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
+                            {activeIncomes.map((income, idx) => {
                                 const pct = (income.amount / totalIncome) * 100;
                                 const colors = [
                                     "bg-indigo-500",
@@ -288,8 +294,8 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                                 );
                             })}
                         </div>
-                        <div className="flex gap-3 mt-2 flex-wrap">
-                            {incomes.map((income, idx) => {
+                        <div className="flex gap-2 sm:gap-3 mt-2 flex-wrap">
+                            {activeIncomes.map((income, idx) => {
                                 const colors = [
                                     "bg-indigo-500",
                                     "bg-emerald-500",
@@ -298,8 +304,8 @@ export default function IncomeSection({ group, incomes, user, members, onRefresh
                                     "bg-sky-500",
                                 ];
                                 return (
-                                    <div key={income.id} className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                                        <div className={`w-2.5 h-2.5 rounded-full ${colors[idx % colors.length]}`} />
+                                    <div key={income.id} className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
+                                        <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${colors[idx % colors.length]}`} />
                                         {getUserName(income.user)}
                                     </div>
                                 );
