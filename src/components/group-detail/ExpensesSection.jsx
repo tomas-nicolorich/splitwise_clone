@@ -297,7 +297,6 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                                     isOwner={isOwner}
                                     getUserName={getUserName}
                                     handleEdit={(exp) => {
-                                        setShowAllExpenses(false);
                                         handleEdit(exp);
                                     }}
                                     handleDelete={(id) => {
