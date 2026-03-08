@@ -20,7 +20,7 @@ import InviteMemberDialog from "../components/group-detail/InviteMemberDialog";
 import IncomeSection from "../components/group-detail/IncomeSection";
 import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
-import SettlementSection from "../components/group-detail/SettlementSection";
+import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
 import { useAuth } from "../lib/AuthContext";
 
 export default function GroupDetail() {
@@ -191,6 +191,12 @@ export default function GroupDetail() {
                         onRefreshMembers={refreshMembers}
                         loading={isFetchingIncomes || isFetchingMembers}
                     />
+                    <RemainingBalanceSection
+                        categories={categories}
+                        incomes={incomes}
+                        members={members}
+                        loading={isFetchingIncomes || isFetchingCategories || isFetchingMembers}
+                    />
                     <ExpensesSection
                         group={group}
                         expenses={expenses}
@@ -212,14 +218,6 @@ export default function GroupDetail() {
                         members={members}
                         onRefresh={refreshCategories}
                         loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
-                    />
-                    <SettlementSection
-                        group={group}
-                        expenses={expenses}
-                        incomes={incomes}
-                        categories={categories}
-                        members={members}
-                        loading={isFetchingIncomes || isFetchingExpenses || isFetchingCategories || isFetchingMembers}
                     />
                 </div>
             </div>

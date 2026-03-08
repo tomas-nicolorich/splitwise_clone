@@ -17,12 +17,63 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { base44 } from "@/api/client";
-import { Receipt, Plus, Trash2, Pencil, Loader2 } from "lucide-react";
+import { Receipt, Plus, Trash2, Pencil, Loader2, List } from "lucide-react";
 import { format } from "date-fns";
+
+const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdit, handleDelete }) => {
+    const category = categories.find(c => c.id === expense.category_id);
+    return (
+        <div
+            className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
+        >
+            <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                    {expense.description}
+                </p>
+                <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                    <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
+                        {category?.name || "Unknown"}
+                    </span>
+                    <span>Paid by {getUserName(expense.paid_by)}</span>
+                    {expense.date && (
+                        <span className="hidden sm:inline">• {format(new Date(expense.date), "MMM d, yyyy")}</span>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
+                    ${Number(expense.amount).toFixed(2)}
+                </span>
+                {(expense.paid_by === user.id || isOwner) && (
+                    <div className="flex items-center">
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
+                            onClick={() => handleEdit(expense)}
+                        >
+                            <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-indigo-500" />
+                        </Button>
+                        <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 sm:h-8 sm:w-8"
+                            onClick={() => handleDelete(expense.id)}
+                        >
+                            <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-red-500" />
+                        </Button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh, loading }) {
     const [showAdd, setShowAdd] = useState(false);
+    const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
@@ -93,6 +144,8 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         onRefresh();
     };
 
+    const displayedExpenses = expenses.slice(0, 3);
+
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
             <CardHeader className="p-4 sm:pb-4">
@@ -118,59 +171,35 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                     </p>
                 ) : (
                     <div className="space-y-2">
-                        {expenses.map((expense) => {
-                            const category = categories.find(c => c.id === expense.category_id);
-                            return (
-                                <div
-                                    key={expense.id}
-                                    className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
-                                >
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs sm:text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                                            {expense.description}
-                                        </p>
-                                        <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1 text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                                            <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
-                                                {category?.name || "Unknown"}
-                                            </span>
-                                            <span>Paid by {getUserName(expense.paid_by)}</span>
-                                            {expense.date && (
-                                                <span className="hidden sm:inline">• {format(new Date(expense.date), "MMM d, yyyy")}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
-                                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100">
-                                            ${Number(expense.amount).toFixed(2)}
-                                        </span>
-                                        {(expense.paid_by === user.id || isOwner) && (
-                                            <div className="flex items-center">
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 sm:h-8 sm:w-8"
-                                                    onClick={() => handleEdit(expense)}
-                                                >
-                                                    <Pencil className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-indigo-500" />
-                                                </Button>
-                                                <Button
-                                                    size="icon"
-                                                    variant="ghost"
-                                                    className="h-7 w-7 sm:h-8 sm:w-8"
-                                                    onClick={() => handleDelete(expense.id)}
-                                                >
-                                                    <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400 hover:text-red-500" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })}
+                        {displayedExpenses.map((expense) => (
+                            <ExpenseRow
+                                key={expense.id}
+                                expense={expense}
+                                categories={categories}
+                                user={user}
+                                isOwner={isOwner}
+                                getUserName={getUserName}
+                                handleEdit={handleEdit}
+                                handleDelete={handleDelete}
+                            />
+                        ))}
+                        
+                        {expenses.length > 3 && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-full text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm h-8 mt-1"
+                                onClick={() => setShowAllExpenses(true)}
+                            >
+                                <List className="w-3.5 h-3.5 mr-1.5" />
+                                See All ({expenses.length})
+                            </Button>
+                        )}
                     </div>
                 )}
             </CardContent>
 
+            {/* Add/Edit Modal */}
             <Dialog open={showAdd} onOpenChange={setShowAdd}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -245,6 +274,42 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                             {loading ? (editingExpense ? "Saving..." : "Adding...") : (editingExpense ? "Save" : "Add Expense")}
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* View All Modal */}
+            <Dialog open={showAllExpenses} onOpenChange={setShowAllExpenses}>
+                <DialogContent className="sm:max-w-2xl dark:bg-slate-800 dark:border-slate-700 max-h-[90vh] flex flex-col">
+                    <DialogHeader className="shrink-0">
+                        <DialogTitle className="dark:text-white flex items-center gap-2">
+                            <Receipt className="w-5 h-5 text-rose-500" />
+                            All Expenses
+                        </DialogTitle>
+                    </DialogHeader>
+                    <ScrollArea className="flex-1 -mr-4 pr-4">
+                        <div className="space-y-2 py-2">
+                            {expenses.map((expense) => (
+                                <ExpenseRow
+                                    key={expense.id}
+                                    expense={expense}
+                                    categories={categories}
+                                    user={user}
+                                    isOwner={isOwner}
+                                    getUserName={getUserName}
+                                    handleEdit={(exp) => {
+                                        setShowAllExpenses(false);
+                                        handleEdit(exp);
+                                    }}
+                                    handleDelete={(id) => {
+                                        // Optional: Keep modal open or close it? 
+                                        // If we delete, the list changes. 
+                                        // Let's keep it open for now, but handleEdit closes it to show the Edit form.
+                                        handleDelete(id);
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </ScrollArea>
                 </DialogContent>
             </Dialog>
         </Card>
