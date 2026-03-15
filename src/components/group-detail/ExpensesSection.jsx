@@ -22,6 +22,18 @@ import { base44 } from "@/api/client";
 import { Receipt, Plus, Trash2, Pencil, Loader2, List } from "lucide-react";
 import { format } from "date-fns";
 
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdit, handleDelete }) => {
     const category = categories.find(c => c.id === expense.category_id);
     return (
@@ -38,7 +50,7 @@ const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdi
                     </span>
                     <span>Paid by {getUserName(expense.paid_by)}</span>
                     {expense.date && (
-                        <span className="hidden sm:inline">• {format(new Date(expense.date), "MMM d, yyyy")}</span>
+                        <span>• {format(new Date(expense.date), "MMM d, yyyy")}</span>
                     )}
                 </div>
             </div>
@@ -80,12 +92,35 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
     const [categoryId, setCategoryId] = useState("");
     const [paidByUserId, setPaidByUserId] = useState("");
     const [loadingAction, setLoadingAction] = useState(false);
+    const [loadingClear, setLoadingClear] = useState(false);
 
     const isOwner = group.members?.[0] === user.id;
 
     const getUserName = (userId) => {
         const member = members.find(m => m.id === userId);
         return member ? member.name : "Unknown User";
+    };
+
+    React.useEffect(() => {
+        if (showAdd && !editingExpense && isOwner) {
+            setPaidByUserId(user.id);
+        }
+    }, [showAdd, editingExpense, isOwner, user.id]);
+
+    const handleClearAll = async () => {
+        setLoadingClear(true);
+        try {
+            // Delete all expenses one by one
+            for (const expense of expenses) {
+                await base44.entities.Expense.delete(expense.id);
+            }
+            onRefresh();
+            setShowAllExpenses(false);
+        } catch (e) {
+            console.error("Error clearing expenses:", e);
+        } finally {
+            setLoadingClear(false);
+        }
     };
 
     const handleAddExpense = async () => {
@@ -130,6 +165,12 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         }
     };
 
+    const handleKeyDown = (e) => {
+        if (e.key === "Enter") {
+            handleAddExpense();
+        }
+    };
+
     const handleEdit = (expense) => {
         setEditingExpense(expense);
         setDescription(expense.description);
@@ -144,7 +185,13 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         onRefresh();
     };
 
-    const displayedExpenses = expenses.slice(0, 3);
+    const sortedExpenses = Array.isArray(expenses) ? [...expenses].sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+        return dateB - dateA;
+    }) : [];
+
+    const displayedExpenses = sortedExpenses.slice(0, 3);
 
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
@@ -245,6 +292,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                                 placeholder="e.g. Weekly groceries"
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
+                                onKeyDown={handleKeyDown}
                             />
                         </div>
                         <div className="space-y-2">
@@ -254,6 +302,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                                 placeholder="e.g. 150"
                                 value={amount}
                                 onChange={(e) => setAmount(e.target.value)}
+                                onKeyDown={handleKeyDown}
                             />
                         </div>
                     </div>
@@ -279,16 +328,16 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
 
             {/* View All Modal */}
             <Dialog open={showAllExpenses} onOpenChange={setShowAllExpenses}>
-                <DialogContent className="sm:max-w-2xl dark:bg-slate-800 dark:border-slate-700 max-h-[90vh] flex flex-col">
-                    <DialogHeader className="shrink-0">
+                <DialogContent className="sm:max-w-2xl dark:bg-slate-800 dark:border-slate-700 h-[80vh] !flex !flex-col p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="p-6 pb-2 shrink-0 border-b dark:border-slate-700">
                         <DialogTitle className="dark:text-white flex items-center gap-2">
                             <Receipt className="w-5 h-5 text-rose-500" />
                             All Expenses
                         </DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="flex-1 -mr-4 pr-4">
-                        <div className="space-y-2 py-2">
-                            {expenses.map((expense) => (
+                    <ScrollArea className="flex-1 min-h-0">
+                        <div className="px-6 space-y-2 py-4">
+                            {sortedExpenses.map((expense) => (
                                 <ExpenseRow
                                     key={expense.id}
                                     expense={expense}
@@ -300,15 +349,41 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                                         handleEdit(exp);
                                     }}
                                     handleDelete={(id) => {
-                                        // Optional: Keep modal open or close it? 
-                                        // If we delete, the list changes. 
-                                        // Let's keep it open for now, but handleEdit closes it to show the Edit form.
                                         handleDelete(id);
                                     }}
                                 />
                             ))}
                         </div>
                     </ScrollArea>
+                    {isOwner && expenses.length > 0 && (
+                        <div className="p-4 border-t dark:border-slate-700 shrink-0 bg-slate-50 dark:bg-slate-800/50">
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="destructive" className="w-full">
+                                        <Trash2 className="w-4 h-4 mr-2" /> Clear All Expenses
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete all expenses in this group.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction 
+                                            onClick={handleClearAll}
+                                            className="bg-red-600 hover:bg-red-700"
+                                            disabled={loadingClear}
+                                        >
+                                            {loadingClear ? "Clearing..." : "Delete All"}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
+                    )}
                 </DialogContent>
             </Dialog>
         </Card>
