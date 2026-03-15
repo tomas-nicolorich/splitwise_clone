@@ -3,11 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { calculateCategorySplits } from "@/lib/financial-utils";
 import { Wallet, Loader2, TrendingUp, TrendingDown } from "lucide-react";
 
-export default function RemainingBalanceSection({ categories, incomes: rawIncomes, members, loading }) {
+export default function RemainingBalanceSection({ categories, incomes: rawIncomes, members, expenses, loading }) {
     
     const splits = React.useMemo(() => {
-        return calculateCategorySplits(categories, rawIncomes, members);
-    }, [categories, rawIncomes, members]);
+        return calculateCategorySplits(categories, rawIncomes, members, expenses);
+    }, [categories, rawIncomes, members, expenses]);
 
     const incomes = React.useMemo(() => {
         const map = new Map();
@@ -19,13 +19,13 @@ export default function RemainingBalanceSection({ categories, incomes: rawIncome
 
     const userBalances = React.useMemo(() => {
         return members.map(member => {
-            const income = incomes.find(i => i.user === member.id);
+            const income = incomes.find(i => String(i.user) === String(member.id));
             const totalIncome = income ? (Number(income.amount) || 0) : 0;
             
             let totalBudgeted = 0;
             // Iterate all categories and sum up this user's share
             Object.values(splits).forEach(categoryShares => {
-                const userShare = categoryShares.find(s => s.userId === member.id);
+                const userShare = categoryShares.find(s => String(s.userId) === String(member.id));
                 if (userShare) {
                     totalBudgeted += userShare.share;
                 }

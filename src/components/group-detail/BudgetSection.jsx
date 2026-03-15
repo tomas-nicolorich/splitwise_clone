@@ -9,10 +9,17 @@ import {
     DialogTitle,
     DialogFooter,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/client";
-import { LayoutGrid, Plus, Trash2, Users, Pencil, Smile, Loader2 } from "lucide-react";
+import { LayoutGrid, Plus, Trash2, Users, Pencil, Smile, Loader2, ArrowRightLeft } from "lucide-react";
 import {
     Popover,
     PopoverContent,
@@ -40,8 +47,8 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
 
     // Pre-calculate clean splits for each category
     const categorySplits = React.useMemo(() => {
-        return calculateCategorySplits(categories, rawIncomes, members);
-    }, [categories, rawIncomes, members]);
+        return calculateCategorySplits(categories, rawIncomes, members, expenses);
+    }, [categories, rawIncomes, members, expenses]);
 
     const [showAdd, setShowAdd] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -51,16 +58,23 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
     const [selectedMembers, setSelectedMembers] = useState([]);
     const [loadingAction, setLoadingAction] = useState(false);
 
+    // Transfer State
+    const [showTransfer, setShowTransfer] = useState(false);
+    const [transferSourceUserId, setTransferSourceUserId] = useState("");
+    const [transferTargetUserId, setTransferTargetUserId] = useState("");
+    const [transferAmount, setTransferAmount] = useState("");
+    const [transferCategoryId, setTransferCategoryId] = useState("");
+
     const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
     const getUserName = (userId) => {
-        const member = members.find(m => m.id === userId);
+        const member = members.find(m => String(m.id) === String(userId));
         return member ? member.name : "Unknown User";
     };
 
     const getSpentInCategory = (userId, categoryId) => {
         return expenses
-            .filter(e => e.category_id === categoryId && e.paid_by === userId)
+            .filter(e => String(e.category_id) === String(categoryId) && String(e.paid_by) === String(userId) && !e.description?.startsWith('[BUDGET_TRANSFER]'))
             .reduce((sum, e) => sum + e.amount, 0);
     };
 
@@ -91,6 +105,41 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
         onRefresh();
     };
 
+    const handleTransferBudget = async () => {
+        const amount = parseFloat(transferAmount);
+        if (!transferSourceUserId || !transferTargetUserId || isNaN(amount) || amount <= 0 || !transferCategoryId) return;
+
+        setLoadingAction(true);
+        try {
+            const senderName = getUserName(transferSourceUserId);
+            // Create a special expense record to represent the transfer
+            // Description contains TO:{receiverId} for logic and human-readable text
+            await base44.entities.Expense.create({
+                group_id: group.id,
+                category_id: transferCategoryId,
+                description: `[BUDGET_TRANSFER] TO:${transferTargetUserId} FROM:${senderName}`,
+                amount: amount,
+                paid_by: transferSourceUserId,
+                date: new Date().toISOString().split("T")[0],
+            });
+            
+            setTransferAmount("");
+            setTransferSourceUserId("");
+            setTransferTargetUserId("");
+            setTransferCategoryId("");
+            setShowTransfer(false);
+            
+            // Critical: call onRefresh to trigger parent query invalidation
+            if (onRefresh) {
+                onRefresh();
+            }
+        } catch (e) {
+            console.error("Transfer failed:", e);
+        } finally {
+            setLoadingAction(false);
+        }
+    };
+
     const resetForm = () => {
         setCatName("");
         setCatAmount("");
@@ -107,6 +156,14 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
         setShowAdd(true);
     };
 
+    const handleTransferClick = (cat, sourceUserId) => {
+        setTransferCategoryId(cat.id);
+        setTransferSourceUserId(sourceUserId);
+        setTransferTargetUserId("");
+        setTransferAmount("");
+        setShowTransfer(true);
+    };
+
     const toggleMember = (memberId) => {
         setSelectedMembers(prev =>
             prev.includes(memberId)
@@ -119,7 +176,7 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
         .filter(i => (i.amount || 0) > 0)
         .map(income => {
             const share = categories.reduce((sum, cat) => {
-                const split = categorySplits[cat.id]?.find(s => s.userId === income.user);
+                const split = categorySplits[cat.id]?.find(s => String(s.userId) === String(income.user));
                 return sum + (split ? split.share : 0);
             }, 0);
             return { userId: income.user, share };
@@ -157,8 +214,8 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                 ) : (
                     <div className="space-y-3 sm:space-y-4">
                         {categories.map((cat) => {
-                            const catMembers = getCategoryMembers(cat);
-                            const relevantIncomes = incomes.filter(i => catMembers.includes(i.user) && (i.amount || 0) > 0);
+                            const catMembers = getCategoryMembers(cat).map(m => String(m));
+                            const relevantIncomes = incomes.filter(i => catMembers.includes(String(i.user)) && (i.amount || 0) > 0);
                             const splits = categorySplits[cat.id] || [];
 
                             return (
@@ -228,6 +285,17 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                                                                 </span>
                                                             </div>
                                                             <div className="flex items-center gap-2 shrink-0">
+                                                                {remaining > 0 && (
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="icon" 
+                                                                        className="h-6 w-6 text-slate-400 hover:text-violet-500"
+                                                                        title="Transfer some of this budget to someone else"
+                                                                        onClick={() => handleTransferClick(cat, split.userId)}
+                                                                    >
+                                                                        <ArrowRightLeft className="w-3 h-3" />
+                                                                    </Button>
+                                                                )}
                                                                 <span className={`text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full font-medium ${colors[idx % colors.length]}`}>
                                                                     {pct}%
                                                                 </span>
@@ -236,22 +304,20 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        {spent > 0 && (
-                                                            <div className="pl-7 sm:pl-8">
-                                                                <div className="flex items-center justify-between text-[10px] sm:text-xs">
-                                                                    <span className="text-slate-500 dark:text-slate-400">Spent: ${Number(spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                                    <span className={`font-medium ${remaining >= -0.001 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                                                                        {remaining >= -0.001 ? `$${Number(remaining).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} left` : `$${Number(Math.abs(remaining)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over`}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="mt-0.5 sm:mt-1 h-1 sm:h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                                                                    <div
-                                                                        className={`h-full transition-all ${remaining >= -0.001 ? 'bg-emerald-500' : 'bg-red-500'}`}
-                                                                        style={{ width: `${Math.min((spent / share) * 100, 100)}%` }}
-                                                                    />
-                                                                </div>
+                                                        <div className="pl-7 sm:pl-8">
+                                                            <div className="flex items-center justify-between text-[10px] sm:text-xs">
+                                                                <span className="text-slate-500 dark:text-slate-400">Spent: ${Number(spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                                <span className={`font-medium ${remaining >= -0.001 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                                                    {remaining >= -0.001 ? `$${Number(remaining).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} left` : `$${Number(Math.abs(remaining)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} over`}
+                                                                </span>
                                                             </div>
-                                                        )}
+                                                            <div className="mt-0.5 sm:mt-1 h-1 sm:h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                                                                <div
+                                                                    className={`h-full transition-all ${remaining >= -0.001 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                                                    style={{ width: `${Math.min((spent / Math.max(share, 0.01)) * 100, 100)}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 );
                                             })}
@@ -294,6 +360,7 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                 )}
             </CardContent>
 
+            {/* Add/Edit Category Dialog */}
             <Dialog open={showAdd} onOpenChange={(val) => {
                 setShowAdd(val);
                 if (!val) setEditingCategory(null);
@@ -366,6 +433,68 @@ export default function BudgetSection({ group, categories, incomes: rawIncomes, 
                             className="bg-indigo-600 hover:bg-indigo-700"
                         >
                             {loading ? "Saving..." : (editingCategory ? "Save Changes" : "Add Category")}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Transfer Budget Dialog */}
+            <Dialog open={showTransfer} onOpenChange={setShowTransfer}>
+                <DialogContent className="sm:max-w-md dark:bg-slate-800 dark:border-slate-700">
+                    <DialogHeader>
+                        <DialogTitle className="dark:text-white flex items-center gap-2">
+                            <ArrowRightLeft className="w-5 h-5 text-violet-500" />
+                            Transfer Budget
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="p-3 bg-violet-50 dark:bg-violet-900/20 rounded-lg border border-violet-100 dark:border-violet-800">
+                            <p className="text-xs text-violet-700 dark:text-violet-300">
+                                You are transferring budget from <strong>{getUserName(transferSourceUserId)}</strong> in the <strong>{categories.find(c => c.id === transferCategoryId)?.name}</strong> category.
+                            </p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <Label className="dark:text-slate-300">Recipient</Label>
+                            <Select value={transferTargetUserId} onValueChange={setTransferTargetUserId}>
+                                <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700 dark:text-white">
+                                    <SelectValue placeholder="Select a member" />
+                                </SelectTrigger>
+                                <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
+                                    {members.filter(m => m.id !== transferSourceUserId).map(member => (
+                                        <SelectItem key={member.id} value={member.id} className="dark:text-slate-300 dark:focus:bg-slate-800">
+                                            {member.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="dark:text-slate-300">Amount to Give</Label>
+                            <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                                <Input
+                                    type="number"
+                                    placeholder="0.00"
+                                    value={transferAmount}
+                                    onChange={(e) => setTransferAmount(e.target.value)}
+                                    className="pl-7 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                                />
+                            </div>
+                            <p className="text-[10px] text-slate-500">
+                                This will decrease {getUserName(transferSourceUserId)}'s budget and increase the recipient's budget.
+                            </p>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowTransfer(false)} className="dark:text-slate-300 dark:border-slate-700">Cancel</Button>
+                        <Button
+                            onClick={handleTransferBudget}
+                            disabled={!transferTargetUserId || !transferAmount || loadingAction}
+                            className="bg-violet-600 hover:bg-violet-700"
+                        >
+                            {loadingAction ? "Transferring..." : "Complete Transfer"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

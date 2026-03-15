@@ -185,11 +185,13 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         onRefresh();
     };
 
-    const sortedExpenses = Array.isArray(expenses) ? [...expenses].sort((a, b) => {
-        const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-        const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
-        return dateB - dateA;
-    }) : [];
+    const sortedExpenses = Array.isArray(expenses) ? [...expenses]
+        .filter(e => !e.description?.startsWith('[BUDGET_TRANSFER]'))
+        .sort((a, b) => {
+            const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
+            const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+            return dateB - dateA;
+        }) : [];
 
     const displayedExpenses = sortedExpenses.slice(0, 3);
 

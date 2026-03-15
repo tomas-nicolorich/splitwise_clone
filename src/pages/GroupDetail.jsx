@@ -195,7 +195,8 @@ export default function GroupDetail() {
                         categories={categories}
                         incomes={incomes}
                         members={members}
-                        loading={isFetchingIncomes || isFetchingCategories || isFetchingMembers}
+                        expenses={expenses}
+                        loading={isFetchingIncomes || isFetchingCategories || isFetchingMembers || isFetchingExpenses}
                     />
                     <ExpensesSection
                         group={group}
@@ -216,7 +217,7 @@ export default function GroupDetail() {
                         incomes={incomes}
                         expenses={expenses}
                         members={members}
-                        onRefresh={refreshCategories}
+                        onRefresh={refreshAll}
                         loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
                     />
                 </div>

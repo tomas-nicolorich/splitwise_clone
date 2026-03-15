@@ -1,5 +1,5 @@
 
-export function calculateCategorySplits(categories, rawIncomes, members) {
+export function calculateCategorySplits(categories, rawIncomes, members, allExpenses = []) {
     const incomes = (() => {
         const map = new Map();
         (rawIncomes || []).forEach(inc => {
@@ -10,10 +10,12 @@ export function calculateCategorySplits(categories, rawIncomes, members) {
 
     const getCategoryMembers = (cat) => {
         if (!cat.members || cat.members.length === 0) {
-            return members.map(m => m.id);
+            return members.map(m => String(m.id));
         }
-        return cat.members;
+        return cat.members.map(m => String(m));
     };
+
+    const transfers = (allExpenses || []).filter(e => e.description?.startsWith('[BUDGET_TRANSFER]'));
 
     const splits = {};
     
@@ -21,7 +23,7 @@ export function calculateCategorySplits(categories, rawIncomes, members) {
 
     categories.forEach(cat => {
         const catMembers = getCategoryMembers(cat);
-        const relevantIncomes = incomes.filter(i => catMembers.includes(i.user) && (i.amount || 0) > 0);
+        const relevantIncomes = incomes.filter(i => catMembers.includes(String(i.user)) && (i.amount || 0) > 0);
         const relevantTotalIncome = relevantIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
         if (relevantTotalIncome === 0 || relevantIncomes.length === 0) {
@@ -70,11 +72,30 @@ export function calculateCategorySplits(categories, rawIncomes, members) {
             s.roundedShare += 1;
         }
 
-        splits[cat.id] = targetShares.map(s => ({
-            userId: s.userId,
-            share: s.roundedShare,
-            pct: s.pct
-        }));
+        // 3. Apply Budget Transfers
+        const catTransfers = transfers.filter(t => String(t.category_id) === String(cat.id));
+        
+        splits[cat.id] = targetShares.map(s => {
+            let adjustedShare = s.roundedShare;
+            catTransfers.forEach(t => {
+                // Sender (paid_by) gives amount
+                if (String(t.paid_by) === String(s.userId)) {
+                    adjustedShare -= Number(t.amount);
+                }
+                // Receiver (parsed from TO:X in description) receives amount
+                const toMatch = t.description.match(/TO:(\d+)/);
+                if (toMatch && String(toMatch[1]) === String(s.userId)) {
+                    adjustedShare += Number(t.amount);
+                }
+            });
+
+            return {
+                userId: s.userId,
+                share: adjustedShare,
+                pct: s.pct,
+                originalShare: s.roundedShare
+            };
+        });
     });
     return splits;
 }
