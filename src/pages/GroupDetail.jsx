@@ -20,6 +20,7 @@ import InviteMemberDialog from "../components/group-detail/InviteMemberDialog";
 import IncomeSection from "../components/group-detail/IncomeSection";
 import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
+import BudgetTransfersSection from "../components/group-detail/BudgetTransfersSection";
 import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
 import { useAuth } from "../lib/AuthContext";
 
@@ -205,6 +206,11 @@ export default function GroupDetail() {
                         user={user}
                         members={members}
                         onRefresh={refreshExpenses}
+                        loading={isFetchingExpenses || isFetchingMembers}
+                    />
+                    <BudgetTransfersSection
+                        expenses={expenses}
+                        members={members}
                         loading={isFetchingExpenses || isFetchingMembers}
                     />
                 </div>
