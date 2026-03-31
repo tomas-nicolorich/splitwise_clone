@@ -137,26 +137,24 @@ export default function GroupDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                     <Link to={`/SavingTarget?id=${groupId}`}>
-                        <Button variant="outline" size="sm" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                        <Button variant="indigo" size="sm">
                             <Target className="w-4 h-4 mr-1.5" />
                             <span className="hidden sm:inline">Saving Goal</span>
                         </Button>
                     </Link>
                     <Button
-                        variant="outline"
+                        variant="indigo"
                         size="sm"
                         onClick={() => setShowInvite(true)}
-                        className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                     >
                         <UserPlus className="w-4 h-4 mr-1.5" />
                         <span className="hidden sm:inline">Invite</span>
                     </Button>
                     {isOwner && (
                         <Button
-                            variant="outline"
+                            variant="destructive-outline"
                             size="sm"
                             onClick={() => setShowDeleteConfirm(true)}
-                            className="border-red-200 text-red-600 hover:bg-red-50"
                         >
                             <Trash2 className="w-4 h-4" />
                         </Button>

@@ -99,6 +99,9 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                                     selected={targetDate}
                                     onSelect={setTargetDate}
                                     initialFocus
+                                    captionLayout="dropdown-buttons"
+                                    fromYear={new Date().getFullYear()}
+                                    toYear={new Date().getFullYear() + 10}
                                 />
                             </PopoverContent>
                         </Popover>

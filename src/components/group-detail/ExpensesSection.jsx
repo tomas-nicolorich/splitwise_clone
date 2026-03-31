@@ -2,26 +2,17 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter,
 } from "@/components/ui/dialog";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { base44 } from "@/api/client";
 import { Receipt, Plus, Trash2, Pencil, Loader2, List } from "lucide-react";
 import { format } from "date-fns";
+import AddExpenseDialog from "./AddExpenseDialog";
 
 import {
     AlertDialog,
@@ -88,11 +79,6 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
     const [showAdd, setShowAdd] = useState(false);
     const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
-    const [description, setDescription] = useState("");
-    const [amount, setAmount] = useState("");
-    const [categoryId, setCategoryId] = useState("");
-    const [paidByUserId, setPaidByUserId] = useState("");
-    const [loadingAction, setLoadingAction] = useState(false);
     const [loadingClear, setLoadingClear] = useState(false);
 
     const isOwner = group.members?.[0] === user.id;
@@ -101,12 +87,6 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         const member = members.find(m => m.id === userId);
         return member ? member.name : "Unknown User";
     };
-
-    React.useEffect(() => {
-        if (showAdd && !editingExpense && isOwner) {
-            setPaidByUserId(user.id);
-        }
-    }, [showAdd, editingExpense, isOwner, user.id]);
 
     const handleClearAll = async () => {
         setLoadingClear(true);
@@ -124,60 +104,8 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
         }
     };
 
-    const handleAddExpense = async () => {
-        const parsedAmount = parseFloat(amount);
-        if (!description.trim() || isNaN(parsedAmount) || parsedAmount <= 0 || !categoryId) return;
-        if (isOwner && !paidByUserId) return;
-
-        const targetUserId = isOwner ? paidByUserId : user.id;
-
-        setLoadingAction(true);
-
-        try {
-            if (editingExpense) {
-                await base44.entities.Expense.update(editingExpense.id, {
-                    category_id: categoryId,
-                    description: description.trim(),
-                    amount: parsedAmount,
-                    paid_by: targetUserId,
-                });
-            } else {
-                await base44.entities.Expense.create({
-                    group_id: group.id,
-                    category_id: categoryId,
-                    description: description.trim(),
-                    amount: parsedAmount,
-                    paid_by: targetUserId,
-                    date: new Date().toISOString().split("T")[0],
-                });
-            }
-
-            setDescription("");
-            setAmount("");
-            setCategoryId("");
-            setPaidByUserId("");
-            setEditingExpense(null);
-            setLoadingAction(false);
-            setShowAdd(false);
-            onRefresh();
-        } catch (e) {
-            console.error("Error saving expense:", e);
-            setLoadingAction(false);
-        }
-    };
-
-    const handleKeyDown = (e) => {
-        if (e.key === "Enter") {
-            handleAddExpense();
-        }
-    };
-
     const handleEdit = (expense) => {
         setEditingExpense(expense);
-        setDescription(expense.description);
-        setAmount(expense.amount.toString());
-        setCategoryId(expense.category_id);
-        setPaidByUserId(expense.paid_by);
         setShowAdd(true);
     };
 
@@ -196,145 +124,57 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
 
     const displayedExpenses = fullMode ? sortedExpenses : sortedExpenses.slice(0, 5);
 
-    return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
-            <CardHeader className="p-4 sm:pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
-                        Expenses
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                        {!fullMode && (
+    const content = (
+        <div className="relative min-h-[100px]">
+            {loading && (
+                <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                </div>
+            )}
+            {expenses.length === 0 ? (
+                <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
+                    No expenses yet. Add one to track shared costs.
+                </p>
+            ) : (
+                <div className="space-y-2">
+                    {displayedExpenses.map((expense) => (
+                        <ExpenseRow
+                            key={expense.id}
+                            expense={expense}
+                            categories={categories}
+                            user={user}
+                            isOwner={isOwner}
+                            getUserName={getUserName}
+                            handleEdit={handleEdit}
+                            handleDelete={handleDelete}
+                        />
+                    ))}
+                    
+                    {(!fullMode && sortedExpenses.length > 5) && (
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
                             <Link to={`/AllExpenses?id=${group.id}`}>
-                                <Button variant="outline" size="sm" className="h-8 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
-                                    <List className="w-3.5 h-3.5 mr-1" /> View All
+                                <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 w-full">
+                                    View All Expenses
                                 </Button>
                             </Link>
-                        )}
-                        <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
-                            <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                        </Button>
-                    </div>
+                        </div>
+                    )}
                 </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 min-h-[100px]">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                    </div>
-                )}
-                {expenses.length === 0 ? (
-                    <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
-                        No expenses yet. Add one to track shared costs.
-                    </p>
-                ) : (
-                    <div className="space-y-2">
-                        {displayedExpenses.map((expense) => (
-                            <ExpenseRow
-                                key={expense.id}
-                                expense={expense}
-                                categories={categories}
-                                user={user}
-                                isOwner={isOwner}
-                                getUserName={getUserName}
-                                handleEdit={handleEdit}
-                                handleDelete={handleDelete}
-                            />
-                        ))}
-                        
-                        {(!fullMode && sortedExpenses.length > 5) && (
-                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
-                                <Link to={`/AllExpenses?id=${group.id}`}>
-                                    <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-full">
-                                        View All Expenses
-                                    </Button>
-                                </Link>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </CardContent>
+            )}
 
-            {/* Add/Edit Modal */}
-            <Dialog open={showAdd} onOpenChange={setShowAdd}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        {isOwner && (
-                            <div className="space-y-2">
-                                <Label>Paid By</Label>
-                                <Select value={paidByUserId} onValueChange={setPaidByUserId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select who paid" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {members.map(member => (
-                                            <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                        <div className="space-y-2">
-                            <Label>Category</Label>
-                            <Select value={categoryId} onValueChange={setCategoryId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a budget category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((cat) => (
-                                        <SelectItem key={cat.id} value={cat.id}>
-                                            {cat.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            {categories.length === 0 && (
-                                <p className="text-xs text-amber-600">Add a budget category first</p>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Description</Label>
-                            <Input
-                                placeholder="e.g. Weekly groceries"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Amount</Label>
-                            <Input
-                                type="number"
-                                placeholder="e.g. 150"
-                                value={amount}
-                                onChange={(e) => setAmount(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            setShowAdd(false);
-                            setEditingExpense(null);
-                            setDescription("");
-                            setAmount("");
-                            setCategoryId("");
-                            setPaidByUserId("");
-                        }}>Cancel</Button>
-                        <Button
-                            onClick={handleAddExpense}
-                            disabled={!description.trim() || !amount || !categoryId || (isOwner && !paidByUserId) || loading}
-
-                        >
-                            {loading ? (editingExpense ? "Saving..." : "Adding...") : (editingExpense ? "Save" : "Add Expense")}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <AddExpenseDialog 
+                open={showAdd}
+                onOpenChange={(open) => {
+                    setShowAdd(open);
+                    if (!open) setEditingExpense(null);
+                }}
+                editingExpense={editingExpense}
+                group={group}
+                categories={categories}
+                user={user}
+                members={members}
+                onRefresh={onRefresh}
+            />
 
             {/* View All Modal */}
             <Dialog open={showAllExpenses} onOpenChange={setShowAllExpenses}>
@@ -396,6 +236,38 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                     )}
                 </DialogContent>
             </Dialog>
+        </div>
+    );
+
+    if (fullMode) {
+        return content;
+    }
+
+    return (
+        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
+            <CardHeader className="p-4 sm:pb-4">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
+                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
+                        Expenses
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                        {!fullMode && (
+                            <Link to={`/AllExpenses?id=${group.id}`}>
+                                <Button variant="indigo" size="sm" className="h-8 text-xs">
+                                    <List className="w-3.5 h-3.5 mr-1" /> View All
+                                </Button>
+                            </Link>
+                        )}
+                        <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                            <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-0">
+                {content}
+            </CardContent>
         </Card>
     );
 }
