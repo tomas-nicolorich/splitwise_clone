@@ -22,6 +22,7 @@ import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
 import BudgetTransfersSection from "../components/group-detail/BudgetTransfersSection";
 import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
+import SavingTargetSection from "../components/group-detail/SavingTargetSection";
 import { useAuth } from "../lib/AuthContext";
 
 export default function GroupDetail() {
@@ -225,6 +226,11 @@ export default function GroupDetail() {
                         members={members}
                         onRefresh={refreshAll}
                         loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
+                    />
+                    <SavingTargetSection 
+                        members={members} 
+                        incomes={incomes} 
+                        loading={isFetchingMembers || isFetchingIncomes} 
                     />
                 </div>
             </div>
