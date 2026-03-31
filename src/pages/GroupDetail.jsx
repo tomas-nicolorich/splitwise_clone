@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, UserPlus, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, UserPlus, Loader2, Trash2, Target } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,7 +22,6 @@ import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
 import BudgetTransfersSection from "../components/group-detail/BudgetTransfersSection";
 import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
-import SavingTargetSection from "../components/group-detail/SavingTargetSection";
 import { useAuth } from "../lib/AuthContext";
 
 export default function GroupDetail() {
@@ -137,6 +136,12 @@ export default function GroupDetail() {
                     )}
                 </div>
                 <div className="flex items-center gap-2">
+                    <Link to={`/SavingTarget?id=${groupId}`}>
+                        <Button variant="outline" size="sm" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                            <Target className="w-4 h-4 mr-1.5" />
+                            <span className="hidden sm:inline">Saving Goal</span>
+                        </Button>
+                    </Link>
                     <Button
                         variant="outline"
                         size="sm"
@@ -226,11 +231,6 @@ export default function GroupDetail() {
                         members={members}
                         onRefresh={refreshAll}
                         loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
-                    />
-                    <SavingTargetSection 
-                        members={members} 
-                        incomes={incomes} 
-                        loading={isFetchingMembers || isFetchingIncomes} 
                     />
                 </div>
             </div>

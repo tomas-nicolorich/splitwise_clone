@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdi
     );
 };
 
-export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh, loading }) {
+export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh, loading, fullMode = false }) {
     const [showAdd, setShowAdd] = useState(false);
     const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
@@ -193,7 +194,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
             return dateB - dateA;
         }) : [];
 
-    const displayedExpenses = sortedExpenses.slice(0, 3);
+    const displayedExpenses = fullMode ? sortedExpenses : sortedExpenses.slice(0, 5);
 
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
@@ -203,9 +204,18 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                         <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
                         Expenses
                     </CardTitle>
-                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
-                        <Plus className="w-3.5 h-3.5 mr-1" /> Add
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {!fullMode && (
+                            <Link to={`/AllExpenses?id=${group.id}`}>
+                                <Button variant="outline" size="sm" className="h-8 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50">
+                                    <List className="w-3.5 h-3.5 mr-1" /> View All
+                                </Button>
+                            </Link>
+                        )}
+                        <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                            <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                        </Button>
+                    </div>
                 </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 min-h-[100px]">
@@ -233,16 +243,14 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                             />
                         ))}
                         
-                        {expenses.length > 3 && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="w-full text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm h-8 mt-1"
-                                onClick={() => setShowAllExpenses(true)}
-                            >
-                                <List className="w-3.5 h-3.5 mr-1.5" />
-                                See All ({expenses.length})
-                            </Button>
+                        {(!fullMode && sortedExpenses.length > 5) && (
+                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
+                                <Link to={`/AllExpenses?id=${group.id}`}>
+                                    <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 w-full">
+                                        View All Expenses
+                                    </Button>
+                                </Link>
+                            </div>
                         )}
                     </div>
                 )}
