@@ -41,8 +41,8 @@ const AuthenticatedApp = () => {
             <Route path="/" element={<Layout><Dashboard /></Layout>} />
             <Route path="/Dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/GroupDetail" element={<Layout><GroupDetail /></Layout>} />
-            <Route path="/SavingTarget" element={<SavingTargetPage />} />
-            <Route path="/AllExpenses" element={<AllExpensesPage />} />
+            <Route path="/SavingTarget" element={<Layout><SavingTargetPage /></Layout>} />
+            <Route path="/AllExpenses" element={<Layout><AllExpensesPage /></Layout>} />
             <Route path="*" element={<PageNotFound />} />
         </Routes>
     );
