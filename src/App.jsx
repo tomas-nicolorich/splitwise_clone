@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
+import SavingTargetPage from './pages/SavingTargetPage';
+import AllExpensesPage from './pages/AllExpensesPage';
 import Login from './pages/Login';
 import Layout from './Layout';
 
@@ -39,6 +41,8 @@ const AuthenticatedApp = () => {
             <Route path="/" element={<Layout><Dashboard /></Layout>} />
             <Route path="/Dashboard" element={<Layout><Dashboard /></Layout>} />
             <Route path="/GroupDetail" element={<Layout><GroupDetail /></Layout>} />
+            <Route path="/SavingTarget" element={<Layout><SavingTargetPage /></Layout>} />
+            <Route path="/AllExpenses" element={<Layout><AllExpensesPage /></Layout>} />
             <Route path="*" element={<PageNotFound />} />
         </Routes>
     );
