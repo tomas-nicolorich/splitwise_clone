@@ -1,11 +1,16 @@
 import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Target, Users, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Target, Users, Loader2, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function SavingTargetSection({ members, incomes, loading }) {
     const [targetAmount, setTargetAmount] = useState("");
-    const [targetDate, setTargetDate] = useState("");
+    const [targetDate, setTargetDate] = useState(undefined);
 
     const calculation = useMemo(() => {
         const amount = parseFloat(targetAmount);
@@ -45,8 +50,10 @@ export default function SavingTargetSection({ members, incomes, loading }) {
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
             <CardHeader className="p-4 sm:pb-4">
-                <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                    <Target className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
+                <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-3 dark:text-white">
+                    <div className="bg-indigo-50 dark:bg-indigo-900/40 p-1.5 rounded-lg">
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
                     Saving Target Calculator
                 </CardTitle>
             </CardHeader>
@@ -57,28 +64,44 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                     </div>
                 )}
                 
-                <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Target Amount</label>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 ml-1">Target Amount</label>
                         <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
                             <Input
                                 type="number"
                                 value={targetAmount}
                                 onChange={(e) => setTargetAmount(e.target.value)}
-                                className="pl-6 h-9 text-sm"
-                                placeholder="5000"
+                                className="pl-7 h-10 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                placeholder="24000"
                             />
                         </div>
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400">Target Date</label>
-                        <Input
-                            type="date"
-                            value={targetDate}
-                            onChange={(e) => setTargetDate(e.target.value)}
-                            className="h-9 text-sm"
-                        />
+                    <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 ml-1">Target Date</label>
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant={"outline"}
+                                    className={cn(
+                                        "w-full h-10 justify-start text-left font-normal bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800",
+                                        !targetDate && "text-muted-foreground"
+                                    )}
+                                >
+                                    <CalendarIcon className="mr-2 h-4 w-4 text-slate-400" />
+                                    {targetDate ? format(targetDate, "PPP") : <span className="text-sm">Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <CalendarComponent
+                                    mode="single"
+                                    selected={targetDate}
+                                    onSelect={setTargetDate}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                        </Popover>
                     </div>
                 </div>
 
@@ -96,17 +119,19 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                         </div>
                         
                         <div className="space-y-2 mt-2">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                            <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
                                 <Users className="w-3 h-3" /> Monthly Split (Income-based)
                             </label>
-                            {calculation.breakdown.map(member => (
-                                <div key={member.id} className="flex justify-between items-center p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-xs">
-                                    <span className="text-slate-700 dark:text-slate-300 font-medium">{member.name}</span>
-                                    <span className="font-bold text-slate-900 dark:text-white">
-                                        ${member.contribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                </div>
-                            ))}
+                            <div className="space-y-1.5 mt-2">
+                                {calculation.breakdown.map(member => (
+                                    <div key={member.id} className="flex justify-between items-center px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50 text-xs sm:text-sm">
+                                        <span className="text-slate-700 dark:text-slate-300 font-medium">{member.name}</span>
+                                        <span className="font-bold text-slate-900 dark:text-white">
+                                            ${member.contribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
