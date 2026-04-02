@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { base44 } from "@/api/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, UserPlus, Loader2, Trash2, Target } from "lucide-react";
@@ -25,8 +25,8 @@ import RemainingBalanceSection from "../components/group-detail/RemainingBalance
 import { useAuth } from "../lib/AuthContext";
 
 export default function GroupDetail() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const groupId = urlParams.get("id");
+    const [searchParams] = useSearchParams();
+    const groupId = searchParams.get("id");
     const { user } = useAuth();
     const [showInvite, setShowInvite] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -42,7 +42,7 @@ export default function GroupDetail() {
     });
 
     const { data: members = [], isFetching: isFetchingMembers } = useQuery({
-        queryKey: ["members", group?.members],
+        queryKey: ["members", groupId],
         queryFn: async () => {
             if (!group?.members?.length) return [];
             return base44.entities.Users.filter({ id: { $in: group.members } });
@@ -64,7 +64,7 @@ export default function GroupDetail() {
 
     const { data: expenses = [], isFetching: isFetchingExpenses } = useQuery({
         queryKey: ["expenses", groupId],
-        queryFn: () => base44.entities.Expense.filter({ group_id: groupId }, "-date"),
+        queryFn: () => base44.entities.Expense.filter({ group_id: groupId }),
         enabled: !!groupId,
     });
 
@@ -84,18 +84,24 @@ export default function GroupDetail() {
     };
 
     const handleDeleteGroup = async () => {
-        // Delete all related data
-        for (const income of incomes) {
-            await base44.entities.Income.delete(income.id);
+        try {
+            // Delete all related data
+            for (const income of incomes) {
+                await base44.entities.Income.delete(income.id);
+            }
+            for (const cat of categories) {
+                await base44.entities.BudgetCategory.delete(cat.id);
+            }
+            for (const expense of expenses) {
+                await base44.entities.Expense.delete(expense.id);
+            }
+            await base44.entities.Group.delete(group.id);
+            window.location.href = createPageUrl("Dashboard");
+        } catch (error) {
+            console.error("Failed to delete group:", error);
+            setShowDeleteConfirm(false);
+            alert("Failed to delete group. Please try again.");
         }
-        for (const cat of categories) {
-            await base44.entities.BudgetCategory.delete(cat.id);
-        }
-        for (const expense of expenses) {
-            await base44.entities.Expense.delete(expense.id);
-        }
-        await base44.entities.Group.delete(group.id);
-        window.location.href = createPageUrl("Dashboard");
     };
 
     if (groupLoading || !user) {
@@ -117,7 +123,7 @@ export default function GroupDetail() {
         );
     }
 
-    const isOwner = group.members?.[0] === user.id;
+    const isOwner = group.ownerId === user.id;
 
     return (
         <div>
@@ -176,7 +182,7 @@ export default function GroupDetail() {
                         </div>
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                             {member.name}
-                            {idx === 0 && (
+                            {group.members[0] === member.id && (
                                 <span className="text-indigo-500 dark:text-indigo-400 ml-1">• Owner</span>
                             )}
                         </span>
