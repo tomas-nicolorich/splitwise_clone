@@ -39,7 +39,7 @@ export default function Login() {
             <Card className="w-full max-w-md border-slate-200 dark:border-slate-800 dark:bg-slate-800 shadow-xl">
                 <CardHeader className="space-y-1">
                     <CardTitle className="text-2xl font-bold text-center dark:text-white">
-                        Login to SplitWise
+                        Login to Calculoides
                     </CardTitle>
                     <CardDescription className="text-center dark:text-slate-400">
                         Enter your email and password to access your dashboard.

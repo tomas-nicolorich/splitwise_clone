@@ -105,7 +105,7 @@ export default function SetupProfileModal() {
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Welcome to SplitWise! Please tell us your name and set a password so you can log in later.
+                        Welcome to Calculoides! Please tell us your name and set a password so you can log in later.
                     </p>
                     <div className="space-y-2">
                         <Label className="dark:text-slate-300">Your Full Name</Label>

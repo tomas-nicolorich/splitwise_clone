@@ -42,7 +42,7 @@ export default function Layout({ children, currentPageName }) {
                             <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center">
                                 <PieChart className="w-5 h-5 text-white" />
                             </div>
-                            <span className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">SplitWise</span>
+                            <span className="text-lg font-semibold text-slate-900 dark:text-white tracking-tight">Calculoides</span>
                         </Link>
 
                         <div className="hidden sm:flex items-center gap-4">
