@@ -205,11 +205,25 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                             </div>
                             <div className="space-y-1.5 mt-2">
                                 {calculation.idealBreakdown.map(member => (
-                                    <div key={member.id} className="flex justify-between items-center px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50 text-xs sm:text-sm">
-                                        <span className="text-slate-700 dark:text-slate-300 font-medium">{member.name}</span>
-                                        <span className="font-bold text-slate-900 dark:text-white">
-                                            ${member.idealContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
+                                    <div key={member.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-slate-700 dark:text-slate-300 truncate">{member.name}</p>
+                                            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                                Income Split: {member.incomePct.toFixed(1)}% (${member.idealContribution.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+                                            </p>
+                                        </div>
+                                        <div className="relative w-28">
+                                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+                                            <Input
+                                                type="number"
+                                                value={manualContributions[member.id] !== undefined ? manualContributions[member.id] : Math.round(member.idealContribution)}
+                                                onChange={(e) => setManualContributions(prev => ({
+                                                    ...prev,
+                                                    [member.id]: e.target.value
+                                                }))}
+                                                className="pl-5 h-8 text-xs bg-white dark:bg-slate-900 border-slate-200"
+                                            />
+                                        </div>
                                     </div>
                                 ))}
                             </div>
