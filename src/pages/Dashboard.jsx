@@ -6,6 +6,7 @@ import { Plus, Loader2 } from "lucide-react";
 import GroupCard from "../components/groups/GroupCard.jsx";
 import CreateGroupDialog from "../components/groups/CreateGroupDialog";
 import { useAuth } from "../lib/AuthContext";
+import { DashboardSkeleton } from "@/components/ui/DashboardSkeleton";
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -59,10 +60,8 @@ export default function Dashboard() {
                 </Button>
             </div>
 
-            {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                </div>
+            {isLoading && groups.length === 0 ? (
+                <DashboardSkeleton />
             ) : myGroups.length === 0 ? (
                 <div className="text-center py-20">
                     <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">

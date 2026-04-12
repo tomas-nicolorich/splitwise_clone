@@ -2,9 +2,10 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/client";
-import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SavingTargetSection from "@/components/group-detail/SavingTargetSection";
+import SavingTargetSkeleton from "@/components/group-detail/SavingTargetSkeleton";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function SavingTargetPage() {
@@ -36,15 +37,7 @@ export default function SavingTargetPage() {
         enabled: !!groupId,
     });
 
-    if (groupLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-            </div>
-        );
-    }
-
-    if (!group) {
+    if (!groupLoading && !group) {
         return (
             <div className="text-center py-20">
                 <h2 className="text-xl font-semibold text-slate-700">Group not found</h2>
@@ -69,7 +62,9 @@ export default function SavingTargetPage() {
                 </div>
             </div>
 
-            {members.length === 0 && !membersLoading ? (
+            {groupLoading ? (
+                <SavingTargetSkeleton />
+            ) : members.length === 0 && !membersLoading ? (
                 <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                     <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4">
                         <Users className="w-7 h-7 text-indigo-400" />
