@@ -114,10 +114,19 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
                 </div>
             </CardHeader>
             <CardContent className="p-4 pt-0 space-y-2 sm:space-y-3 min-h-[100px]">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                {loading && !incomes.length ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-12 w-full rounded-xl" />
+                        <Skeleton className="h-12 w-full rounded-xl" />
                     </div>
+                ) : (
+                    <>
+                        {loading && (
+                            <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
+                                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                            </div>
+                        )}
+                            </>
                 )}
                 {addingIncome && (
                     <div className="flex items-center gap-2 p-2 sm:p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
