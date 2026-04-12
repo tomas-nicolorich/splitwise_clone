@@ -1,5 +1,5 @@
 import React from "react";
-import { useLocation, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/client";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
@@ -81,7 +81,6 @@ export default function SavingTargetPage() {
                 <SavingTargetSection 
                     members={members} 
                     incomes={incomes} 
-                    user={user}
                     loading={membersLoading || incomesLoading} 
                 />
             )}

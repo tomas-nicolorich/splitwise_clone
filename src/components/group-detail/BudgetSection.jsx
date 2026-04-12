@@ -19,12 +19,9 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from "@/api/client";
-import { LayoutGrid, Plus, Trash2, Users, Pencil, Smile, Loader2, ArrowRightLeft } from "lucide-react";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+import { LayoutGrid, Plus, Trash2, Users, Pencil, Loader2, ArrowRightLeft } from "lucide-react";
+
+
 import { calculateCategorySplits } from "@/lib/financial-utils";
 
 const EMOJIS = ["🏠", "🛒", "🔌", "🚗", "🍔", "🍿", "🏥", "💡", "🛡️", "📱", "🧹", "🎒", "🎁", "🐾", "✈️"];
