@@ -147,6 +147,33 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                             </PopoverContent>
                         </Popover>
                     </div>
+
+                    <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 ml-1">Starting Balance</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                            <Input
+                                type="number"
+                                value={startingBalance}
+                                onChange={(e) => setStartingBalance(e.target.value)}
+                                className="pl-7 h-10 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                placeholder="0"
+                            />
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 ml-1">Monthly Expenses (from savings)</label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                            <Input
+                                type="number"
+                                value={monthlyExpenses}
+                                onChange={(e) => setMonthlyExpenses(e.target.value)}
+                                className="pl-7 h-10 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                                placeholder="0"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {calculation && !calculation.error && (
@@ -158,20 +185,30 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-slate-500 dark:text-slate-400">Monthly Target:</span>
                             <span className="font-bold text-indigo-600 dark:text-indigo-400 text-base">
-                                ${calculation.monthlyTarget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                ${calculation.idealGroupContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                         </div>
                         
                         <div className="space-y-2 mt-2">
-                            <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
-                                <Users className="w-3 h-3" /> Monthly Split (Income-based)
-                            </label>
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 ml-1">
+                                    <Users className="w-3 h-3" /> Monthly Split & Forecast
+                                </label>
+                                <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 text-[10px] px-2 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                                    onClick={() => setManualContributions({})}
+                                >
+                                    Reset to Income Split
+                                </Button>
+                            </div>
                             <div className="space-y-1.5 mt-2">
-                                {calculation.breakdown.map(member => (
+                                {calculation.idealBreakdown.map(member => (
                                     <div key={member.id} className="flex justify-between items-center px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/40 border border-slate-100 dark:border-slate-700/50 text-xs sm:text-sm">
                                         <span className="text-slate-700 dark:text-slate-300 font-medium">{member.name}</span>
                                         <span className="font-bold text-slate-900 dark:text-white">
-                                            ${member.contribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            ${member.idealContribution.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 ))}
