@@ -17,6 +17,9 @@ export default function SavingTargetSection({ members, incomes, loading }) {
 
     const calculation = useMemo(() => {
         const amount = parseFloat(targetAmount);
+        const startBal = parseFloat(startingBalance) || 0;
+        const monthlyExp = parseFloat(monthlyExpenses) || 0;
+        
         if (isNaN(amount) || !targetDate || members.length === 0) return null;
 
         const today = new Date();
@@ -27,28 +30,63 @@ export default function SavingTargetSection({ members, incomes, loading }) {
         
         if (monthsRemaining <= 0) return { error: "Target date must be in the future" };
 
-        const monthlyTarget = amount / monthsRemaining;
+        const remainingGoal = amount - startBal;
+        if (remainingGoal <= 0) return { error: "Goal already reached with starting balance!" };
+
+        // 1. The Plan (Goal-Based)
+        const requiredMonthlyNet = remainingGoal / monthsRemaining;
+        const idealGroupContribution = requiredMonthlyNet + monthlyExp;
         const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
-        if (totalIncome === 0) return { error: "Please add income for at least one member" };
-
-        const breakdown = members.map(member => {
+        const idealBreakdown = members.map(member => {
             const income = incomes.find(i => i.user === member.id)?.amount || 0;
-            const contribution = (income / totalIncome) * monthlyTarget;
+            const incomePct = totalIncome > 0 ? (income / totalIncome) : 0;
+            const contribution = incomePct * idealGroupContribution;
             return {
                 id: member.id,
                 name: member.name,
-                contribution,
-                income
+                idealContribution: contribution,
+                income,
+                incomePct: incomePct * 100
             };
         });
 
+        // 2. The Forecast (Reality-Based)
+        const actualGroupContribution = members.reduce((sum, member) => {
+            const manual = parseFloat(manualContributions[member.id]);
+            if (!isNaN(manual)) return sum + manual;
+            
+            // Fallback to ideal split if not overridden
+            const ideal = idealBreakdown.find(m => m.id === member.id)?.idealContribution || 0;
+            return sum + ideal;
+        }, 0);
+
+        const actualMonthlyNet = actualGroupContribution - monthlyExp;
+        
+        let projection = null;
+        if (actualMonthlyNet <= 0) {
+            projection = { error: "Goal never reached (Expenses ≥ Contributions)" };
+        } else {
+            const projectedMonths = remainingGoal / actualMonthlyNet;
+            const projectedDate = new Date();
+            projectedDate.setMonth(today.getMonth() + Math.ceil(projectedMonths));
+            projection = {
+                projectedMonths: Math.ceil(projectedMonths),
+                projectedDate,
+                actualMonthlyNet,
+                actualGroupContribution
+            };
+        }
+
         return {
             monthsRemaining,
-            monthlyTarget,
-            breakdown
+            requiredMonthlyNet,
+            idealGroupContribution,
+            idealBreakdown,
+            projection,
+            remainingGoal
         };
-    }, [targetAmount, targetDate, members, incomes]);
+    }, [targetAmount, targetDate, startingBalance, monthlyExpenses, members, incomes, manualContributions]);
 
     return (
         <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
