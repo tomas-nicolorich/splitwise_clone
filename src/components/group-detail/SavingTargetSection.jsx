@@ -39,7 +39,10 @@ export default function SavingTargetSection({ members, incomes, loading }) {
         const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
 
         const idealBreakdown = members.map(member => {
-            const income = incomes.find(i => i.user === member.id)?.amount || 0;
+            // Sum all incomes for this user
+            const userIncomes = incomes.filter(i => i.user === member.id);
+            const income = userIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+            
             const incomePct = totalIncome > 0 ? (income / totalIncome) : 0;
             const contribution = incomePct * idealGroupContribution;
             return {
@@ -69,7 +72,8 @@ export default function SavingTargetSection({ members, incomes, loading }) {
         } else {
             const projectedMonths = remainingGoal / actualMonthlyNet;
             const projectedDate = new Date();
-            projectedDate.setMonth(today.getMonth() + Math.ceil(projectedMonths));
+            // Adjust with - 1 to match inclusive month logic
+            projectedDate.setMonth(today.getMonth() + Math.ceil(projectedMonths) - 1);
             projection = {
                 projectedMonths: Math.ceil(projectedMonths),
                 projectedDate,
