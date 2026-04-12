@@ -11,14 +11,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/client";
 import { toast } from "sonner";
-import { Loader2, Smile } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "@/lib/supabase-client";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
+
+
 
 const EMOJIS = ["👤", "🐱", "🐶", "🦊", "🦁", "🐸", "🐵", "🦄", "🌈", "⭐", "🔥", "💎", "🍕", "🎨", "🚀"];
 
