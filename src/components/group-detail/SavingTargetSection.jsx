@@ -35,9 +35,8 @@ export default function SavingTargetSection({ members, incomes, loading }) {
 
         // 1. The Plan (Goal-Based)
         const requiredMonthlyNet = remainingGoal / monthsRemaining;
-        const idealGroupContribution = requiredMonthlyNet + monthlyExp;
+        const idealGroupContribution = requiredMonthlyNet; // Expenses do not increase the target
         const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
-
         const idealBreakdown = members.map(member => {
             // Sum all incomes for this user
             const userIncomes = incomes.filter(i => i.user === member.id);
