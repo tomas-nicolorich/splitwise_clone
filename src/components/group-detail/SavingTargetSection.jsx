@@ -228,6 +228,49 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                                 ))}
                             </div>
                         </div>
+
+                        {calculation.projection && (
+                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* The Plan */}
+                                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                                    <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">The Goal (Plan)</p>
+                                    <div className="space-y-1">
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{format(targetDate, "MMM yyyy")}</p>
+                                        <p className="text-xs text-slate-500">Need ${calculation.idealGroupContribution.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo total</p>
+                                    </div>
+                                </div>
+
+                                {/* The Forecast */}
+                                <div className={cn(
+                                    "p-4 rounded-2xl border transition-colors",
+                                    calculation.projection.error 
+                                        ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
+                                        : calculation.projection.projectedDate <= targetDate
+                                            ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800"
+                                            : "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800"
+                                )}>
+                                    <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">The Forecast (Reality)</p>
+                                    {calculation.projection.error ? (
+                                        <div className="space-y-1">
+                                            <p className="text-sm font-bold text-red-600 dark:text-red-400">Never Reached</p>
+                                            <p className="text-xs text-red-500/80">Expenses exceed contributions</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            <p className={cn(
+                                                "text-xl font-bold",
+                                                calculation.projection.projectedDate <= targetDate ? "text-emerald-600" : "text-amber-600"
+                                            )}>
+                                                {format(calculation.projection.projectedDate, "MMM yyyy")}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                At ${calculation.projection.actualGroupContribution.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo actual
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
