@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 export default function SavingTargetSection({ members, incomes, loading }) {
     const [targetAmount, setTargetAmount] = useState("");
     const [targetDate, setTargetDate] = useState(undefined);
+    const [startingBalance, setStartingBalance] = useState("");
+    const [monthlyExpenses, setMonthlyExpenses] = useState("");
+    const [manualContributions, setManualContributions] = useState({}); // { memberId: amount }
 
     const calculation = useMemo(() => {
         const amount = parseFloat(targetAmount);
