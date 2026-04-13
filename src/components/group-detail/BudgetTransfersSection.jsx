@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -8,21 +7,19 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowRightLeft, Loader2, List, History } from "lucide-react";
+import { ArrowRightLeft, List, History } from "lucide-react";
 import { format } from "date-fns";
+import { useGroupData } from "@/hooks/use-group-data";
+import SectionCard from "@/components/ui/SectionCard";
+import { getUserName } from "@/utils/utils";
 
 const TransferRow = ({ transfer, members }) => {
-    const getUserName = (userId) => {
-        const member = members.find(m => String(m.id) === String(userId));
-        return member ? member.name : "Unknown User";
-    };
-
     // Extract receiver name/ID from description if possible, or use fallback
     // Description format: [BUDGET_TRANSFER] TO:{receiverId} FROM:{senderName}
     const receiverMatch = transfer.description.match(/TO:(\d+)/);
     const receiverId = receiverMatch ? receiverMatch[1] : null;
-    const receiverName = receiverId ? getUserName(receiverId) : "Unknown";
-    const senderName = getUserName(transfer.paid_by);
+    const receiverName = receiverId ? getUserName(receiverId, members) : "Unknown";
+    const senderName = getUserName(transfer.paid_by, members);
 
     return (
         <div
@@ -52,10 +49,16 @@ const TransferRow = ({ transfer, members }) => {
     );
 };
 
-export default function BudgetTransfersSection({ expenses, members, loading }) {
+export default function BudgetTransfersSection({ groupId }) {
+    const { 
+        expenses, 
+        members, 
+        isFetching 
+    } = useGroupData(groupId);
+
     const [showAll, setShowAll] = useState(false);
 
-    const transfers = React.useMemo(() => {
+    const transfers = useMemo(() => {
         return (expenses || [])
             .filter(e => e.description?.startsWith('[BUDGET_TRANSFER]'))
             .sort((a, b) => {
@@ -67,53 +70,35 @@ export default function BudgetTransfersSection({ expenses, members, loading }) {
 
     const displayedTransfers = transfers.slice(0, 3);
 
-    if (transfers.length === 0 && !loading) return null;
+    if (transfers.length === 0 && !isFetching) return null;
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
-            <CardHeader className="p-4 sm:pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <History className="w-4 h-4 sm:w-5 sm:h-5 text-violet-500" />
-                        Budget Transfers
-                    </CardTitle>
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 min-h-[60px]">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                    </div>
-                )}
+        <SectionCard
+            title="Budget Transfers"
+            icon={History}
+            loading={isFetching}
+        >
+            <div className="space-y-2">
+                {displayedTransfers.map((transfer) => (
+                    <TransferRow
+                        key={transfer.id}
+                        transfer={transfer}
+                        members={members}
+                    />
+                ))}
                 
-                <div className="space-y-2">
-                    {displayedTransfers.map((transfer) => (
-                        <TransferRow
-                            key={transfer.id}
-                            transfer={transfer}
-                            members={members}
-                        />
-                    ))}
-                    
-                    {transfers.length > 3 && (
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-full text-violet-600 dark:text-violet-400 text-xs sm:text-sm h-8 mt-1"
-                            onClick={() => setShowAll(true)}
-                        >
-                            <List className="w-3.5 h-3.5 mr-1.5" />
-                            See All ({transfers.length})
-                        </Button>
-                    )}
-
-                    {transfers.length === 0 && loading && (
-                        <div className="py-8 flex justify-center">
-                            <Loader2 className="w-6 h-6 animate-spin text-slate-300" />
-                        </div>
-                    )}
-                </div>
-            </CardContent>
+                {transfers.length > 3 && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-violet-600 dark:text-violet-400 text-xs sm:text-sm h-8 mt-1"
+                        onClick={() => setShowAll(true)}
+                    >
+                        <List className="w-3.5 h-3.5 mr-1.5" />
+                        See All ({transfers.length})
+                    </Button>
+                )}
+            </div>
 
             {/* View All Modal */}
             <Dialog open={showAll} onOpenChange={setShowAll}>
@@ -137,6 +122,6 @@ export default function BudgetTransfersSection({ expenses, members, loading }) {
                     </ScrollArea>
                 </DialogContent>
             </Dialog>
-        </Card>
+        </SectionCard>
     );
 }

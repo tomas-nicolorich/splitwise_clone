@@ -16,18 +16,23 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { base44 } from "@/api/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGroupData } from "@/hooks/use-group-data";
 
 export default function AddExpenseDialog({ 
     open, 
     onOpenChange, 
     editingExpense, 
-    group, 
-    categories, 
-    user, 
-    members, 
-    onRefresh 
+    groupId
 }) {
+    const { user } = useAuth();
+    const { 
+        group, 
+        categories, 
+        members, 
+        actions 
+    } = useGroupData(groupId);
+
     const [description, setDescription] = useState("");
     const [amount, setAmount] = useState("");
     const [categoryId, setCategoryId] = useState("");
@@ -63,15 +68,15 @@ export default function AddExpenseDialog({
 
         try {
             if (editingExpense) {
-                await base44.entities.Expense.update(editingExpense.id, {
+                await actions.updateExpense({
+                    id: editingExpense.id,
                     category_id: categoryId,
                     description: description.trim(),
                     amount: parsedAmount,
                     paid_by: targetUserId,
                 });
             } else {
-                await base44.entities.Expense.create({
-                    group_id: group.id,
+                await actions.addExpense({
                     category_id: categoryId,
                     description: description.trim(),
                     amount: parsedAmount,
@@ -82,7 +87,6 @@ export default function AddExpenseDialog({
 
             setLoading(false);
             onOpenChange(false);
-            onRefresh();
         } catch (e) {
             console.error("Error saving expense:", e);
             setLoading(false);
@@ -97,35 +101,35 @@ export default function AddExpenseDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md dark:bg-slate-800 dark:border-slate-700">
                 <DialogHeader>
-                    <DialogTitle>{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
+                    <DialogTitle className="dark:text-white">{editingExpense ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 py-2">
                     {isOwner && (
                         <div className="space-y-2">
-                            <Label>Paid By</Label>
+                            <Label className="dark:text-slate-300">Paid By</Label>
                             <Select value={paidByUserId} onValueChange={setPaidByUserId}>
-                                <SelectTrigger>
+                                <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700 dark:text-white">
                                     <SelectValue placeholder="Select who paid" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
                                     {members.map(member => (
-                                        <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+                                        <SelectItem key={member.id} value={member.id} className="dark:text-slate-300 dark:focus:bg-slate-800">{member.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     )}
                     <div className="space-y-2">
-                        <Label>Category</Label>
+                        <Label className="dark:text-slate-300">Category</Label>
                         <Select value={categoryId} onValueChange={setCategoryId}>
-                            <SelectTrigger>
+                            <SelectTrigger className="dark:bg-slate-900 dark:border-slate-700 dark:text-white">
                                 <SelectValue placeholder="Select a budget category" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
                                 {categories.map((cat) => (
-                                    <SelectItem key={cat.id} value={cat.id}>
+                                    <SelectItem key={cat.id} value={cat.id} className="dark:text-slate-300 dark:focus:bg-slate-800">
                                         {cat.name}
                                     </SelectItem>
                                 ))}
@@ -136,30 +140,36 @@ export default function AddExpenseDialog({
                         )}
                     </div>
                     <div className="space-y-2">
-                        <Label>Description</Label>
+                        <Label className="dark:text-slate-300">Description</Label>
                         <Input
                             placeholder="e.g. Weekly groceries"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             onKeyDown={handleKeyDown}
+                            className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                         />
                     </div>
                     <div className="space-y-2">
-                        <Label>Amount</Label>
-                        <Input
-                            type="number"
-                            placeholder="e.g. 150"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
+                        <Label className="dark:text-slate-300">Amount</Label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                            <Input
+                                type="number"
+                                placeholder="0.00"
+                                value={amount}
+                                onChange={(e) => setAmount(e.target.value)}
+                                onKeyDown={handleKeyDown}
+                                className="pl-7 dark:bg-slate-900 dark:border-slate-700 dark:text-white"
+                            />
+                        </div>
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} className="dark:text-slate-300 dark:border-slate-700">Cancel</Button>
                     <Button
                         onClick={handleAddExpense}
                         disabled={!description.trim() || !amount || !categoryId || (isOwner && !paidByUserId) || loading}
+                        className="bg-indigo-600 hover:bg-indigo-700"
                     >
                         {loading ? (editingExpense ? "Saving..." : "Adding...") : (editingExpense ? "Save" : "Add Expense")}
                     </Button>

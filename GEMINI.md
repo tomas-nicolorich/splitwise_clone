@@ -17,13 +17,21 @@ A collaborative financial tracking application migrated from Base44 to a standal
 
 - `src/api/`:
   - `client.js`: Local Storage-based mock backend that implements the Base44 SDK interface.
-  - `client.js`: Re-exports the mock client for compatibility with existing code.
 - `src/components/`:
   - `ui/`: Base UI components.
-  - `groups/`: Group management components.
-  - `group-detail/`: Financial tracking components.
-- `src/lib/`: Core logic, including `AuthContext.jsx` and `query-client.js`.
+  - `auth/`: Authentication and profile management components.
+  - `dashboard/`: Dashboard components (renamed from `groups/`).
+  - `group-detail/`: Financial tracking components for specific groups.
+- `src/contexts/`:
+  - `AuthContext.jsx`: Authentication state management.
+- `src/hooks/`:
+  - `use-mobile.jsx`: Responsive layout hook.
+- `src/lib/`:
+  - Configuration files like `query-client.js` and `supabase-client.js`.
 - `src/pages/`: Application pages (`Dashboard.jsx`, `GroupDetail.jsx`).
+- `src/utils/`:
+  - `financial-utils.js`: Financial tracking and split calculation logic.
+  - `utils.js`: Common helper functions.
 - `src/Layout.jsx`: Main layout wrapper.
 - `src/App.jsx`: Main entry point with React Router configuration.
 

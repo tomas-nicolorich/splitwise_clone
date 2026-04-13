@@ -1,43 +1,27 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/client";
 import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SavingTargetSection from "@/components/group-detail/SavingTargetSection";
 import SavingTargetSkeleton from "@/components/group-detail/SavingTargetSkeleton";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+
+import { useGroupData } from "../hooks/use-group-data";
 
 export default function SavingTargetPage() {
     const { user } = useAuth();
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get("id");
 
-    const { data: group, isLoading: groupLoading } = useQuery({
-        queryKey: ["group", groupId],
-        queryFn: async () => {
-            const groups = await base44.entities.Group.filter({ id: groupId });
-            return groups[0];
-        },
-        enabled: !!groupId,
-    });
+    const { 
+        group, 
+        isLoading, 
+        isFetching,
+        members,
+        incomes
+    } = useGroupData(groupId);
 
-    const { data: members = [], isLoading: membersLoading } = useQuery({
-        queryKey: ["members", group?.members],
-        queryFn: async () => {
-            if (!group?.members?.length) return [];
-            return base44.entities.Users.filter({ id: { $in: group.members } });
-        },
-        enabled: !!group?.members?.length,
-    });
-
-    const { data: incomes = [], isLoading: incomesLoading } = useQuery({
-        queryKey: ["incomes", groupId],
-        queryFn: () => base44.entities.Income.filter({ group_id: groupId }),
-        enabled: !!groupId,
-    });
-
-    if (!groupLoading && !group) {
+    if (!isLoading && !group) {
         return (
             <div className="text-center py-20">
                 <h2 className="text-xl font-semibold text-slate-700">Group not found</h2>
@@ -62,9 +46,9 @@ export default function SavingTargetPage() {
                 </div>
             </div>
 
-            {groupLoading ? (
+            {isLoading ? (
                 <SavingTargetSkeleton />
-            ) : members.length === 0 && !membersLoading ? (
+            ) : members.length === 0 && !isFetching ? (
                 <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                     <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4">
                         <Users className="w-7 h-7 text-indigo-400" />
@@ -74,9 +58,7 @@ export default function SavingTargetPage() {
                 </div>
             ) : (
                 <SavingTargetSection 
-                    members={members} 
-                    incomes={incomes} 
-                    loading={membersLoading || incomesLoading} 
+                    groupId={groupId}
                 />
             )}
         </div>

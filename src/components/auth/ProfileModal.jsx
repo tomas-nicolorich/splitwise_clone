@@ -9,16 +9,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "../lib/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "@/lib/supabase-client";
 
 
 
 export default function ProfileModal({ open, onOpenChange }) {
-    const { user } = useAuth();
+    const { user, updateMe } = useAuth();
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -51,7 +50,7 @@ export default function ProfileModal({ open, onOpenChange }) {
 
         try {
             // Update profile in DB
-            await base44.auth.updateMe({
+            await updateMe({
                 full_name: name.trim()
             });
 
@@ -65,8 +64,6 @@ export default function ProfileModal({ open, onOpenChange }) {
 
             toast.success("Profile updated!");
             onOpenChange(false);
-            // Refresh to update UI everywhere
-            window.location.reload();
         } catch (e) {
             console.error("Error updating profile:", e);
             toast.error(e.message || "Failed to update profile.");

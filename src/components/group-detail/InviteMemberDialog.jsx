@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { base44 } from "@/api/client";
 import { toast } from "sonner";
+import { useGroupData } from "@/hooks/use-group-data";
 
-export default function InviteMemberDialog({ open, onOpenChange, group, onMemberAdded }) {
+export default function InviteMemberDialog({ open, onOpenChange, groupId }) {
+    const { group, actions } = useGroupData(groupId);
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -51,13 +53,11 @@ export default function InviteMemberDialog({ open, onOpenChange, group, onMember
                 return;
             }
 
-            const updatedMembers = [...(group.members || []), userId];
-            await base44.entities.Group.update(group.id, { members: updatedMembers });
+            await actions.inviteMember(userId);
 
             toast.success(`Invitation sent to ${trimmed}!`);
             setEmail("");
             onOpenChange(false);
-            onMemberAdded();
         } catch (e) {
             console.error("Error adding member:", e);
             toast.error("Failed to send invitation.");

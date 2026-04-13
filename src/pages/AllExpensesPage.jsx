@@ -1,8 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/client";
-import { ArrowLeft, Loader2, Receipt, Plus } from "lucide-react";
+import { ArrowLeft, Receipt, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Select,
@@ -13,7 +11,9 @@ import {
 } from "@/components/ui/select";
 import ExpensesSection from "@/components/group-detail/ExpensesSection";
 import AddExpenseDialog from "@/components/group-detail/AddExpenseDialog";
-import { useAuth } from "@/lib/AuthContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGroupData } from "@/hooks/use-group-data";
+import { GroupDetailSkeleton } from "@/components/ui/GroupDetailSkeleton";
 
 export default function AllExpensesPage() {
     const { user } = useAuth();
@@ -24,48 +24,27 @@ export default function AllExpensesPage() {
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get("id");
 
-    const { data: group, isLoading: groupLoading } = useQuery({
-        queryKey: ["group", groupId],
-        queryFn: async () => {
-            const groups = await base44.entities.Group.filter({ id: groupId });
-            return groups[0];
-        },
-        enabled: !!groupId,
-    });
-
-    const { data: members = [] } = useQuery({
-        queryKey: ["members", group?.members],
-        queryFn: async () => {
-            if (!group?.members?.length) return [];
-            return base44.entities.Users.filter({ id: { $in: group.members } });
-        },
-        enabled: !!group?.members?.length,
-    });
-
-    const { data: categories = [] } = useQuery({
-        queryKey: ["categories", groupId],
-        queryFn: () => base44.entities.BudgetCategory.filter({ group_id: groupId }),
-        enabled: !!groupId,
-    });
-
-    const { data: expenses = [], isFetching: isFetchingExpenses, refetch } = useQuery({
-        queryKey: ["expenses", groupId],
-        queryFn: () => base44.entities.Expense.filter({ group_id: groupId }, "-date"),
-        enabled: !!groupId,
-    });
+    const { 
+        group, 
+        isLoading, 
+        isFetching,
+        members,
+        categories,
+        expenses
+    } = useGroupData(groupId);
 
     const filteredExpenses = expenses.filter(expense => {
-        const userMatch = selectedUser === "all" || expense.paid_by === selectedUser;
-        const categoryMatch = selectedCategory === "all" || expense.category_id === selectedCategory;
+        const userMatch = selectedUser === "all" || String(expense.paid_by) === String(selectedUser);
+        const categoryMatch = selectedCategory === "all" || String(expense.category_id) === String(selectedCategory);
         return userMatch && categoryMatch;
     });
 
     const isFiltered = selectedUser !== "all" || selectedCategory !== "all";
 
-    if (groupLoading) {
+    if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            <div className="max-w-4xl mx-auto">
+                <GroupDetailSkeleton />
             </div>
         );
     }
@@ -145,7 +124,7 @@ export default function AllExpensesPage() {
                 )}
             </div>
 
-            {expenses.length === 0 && !isFetchingExpenses ? (
+            {expenses.length === 0 && !isFetching ? (
                 <div className="text-center py-20 bg-white dark:bg-slate-800 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
                     <div className="w-16 h-16 rounded-2xl bg-rose-50 dark:bg-rose-900/20 flex items-center justify-center mx-auto mb-4">
                         <Receipt className="w-7 h-7 text-rose-400" />
@@ -155,13 +134,8 @@ export default function AllExpensesPage() {
                 </div>
             ) : (
                 <ExpensesSection 
-                    group={group} 
+                    groupId={groupId}
                     expenses={filteredExpenses} 
-                    categories={categories} 
-                    user={user}
-                    members={members} 
-                    onRefresh={refetch}
-                    loading={isFetchingExpenses}
                     fullMode={true}
                 />
             )}
@@ -169,11 +143,7 @@ export default function AllExpensesPage() {
             <AddExpenseDialog 
                 open={showAdd}
                 onOpenChange={setShowAdd}
-                group={group}
-                categories={categories}
-                user={user}
-                members={members}
-                onRefresh={refetch}
+                groupId={groupId}
             />
         </div>
     );

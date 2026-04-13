@@ -1,19 +1,23 @@
 import React, { useState } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Pencil, Check, X, User, Loader2 } from "lucide-react";
-import { base44 } from "@/api/client";
+import { DollarSign, Pencil, Check, X, User } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGroupData } from "@/hooks/use-group-data";
+import SectionCard from "@/components/ui/SectionCard";
+import { getUserName } from "@/utils/utils";
 
-export default function IncomeSection({ group, incomes: rawIncomes, user, members, onRefresh, onRefreshMembers, loading }) {
-    const incomes = React.useMemo(() => {
-        const map = new Map();
-        (rawIncomes || []).forEach(inc => {
-            if (inc && inc.user) map.set(inc.user.toString(), inc);
-        });
-        return Array.from(map.values());
-    }, [rawIncomes]);
+export default function IncomeSection({ groupId }) {
+    const { user, updateMe } = useAuth();
+    const { 
+        group, 
+        incomes, 
+        members, 
+        isFetching, 
+        totalIncome, 
+        actions 
+    } = useGroupData(groupId);
 
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
@@ -23,13 +27,7 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
     const [editingNameUserId, setEditingNameUserId] = useState(null);
     const [editNameValue, setEditNameValue] = useState("");
 
-    const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
-    const isOwner = group.members?.[0] === user.id;
-
-    const getUserName = (userId) => {
-        const member = members.find(m => m.id === userId);
-        return member ? member.name : "Unknown User";
-    };
+    const isOwner = group?.members?.[0] === user.id;
 
     const getPercentage = (amount) => {
         if (totalIncome === 0) return 0;
@@ -41,45 +39,41 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
         if (isNaN(amount) || amount < 0) return;
 
         const targetUserId = addingForUserId || user.id;
-        const existingIncome = incomes.find(i => i.user === targetUserId);
+        const existingIncome = incomes.find(i => String(i.user) === String(targetUserId));
 
         if (existingIncome) {
-            await base44.entities.Income.update(existingIncome.id, { amount });
+            await actions.updateIncome({ id: existingIncome.id, amount });
         } else {
-            await base44.entities.Income.create({
-                group_id: group.id,
-                user: targetUserId,
-                amount,
-            });
+            await actions.addIncome({ user: targetUserId, amount });
         }
         setAddingIncome(false);
         setNewAmount("");
         setAddingForUserId("");
-        onRefresh();
     };
 
     const handleUpdateIncome = async (incomeId) => {
         const amount = parseFloat(editAmount);
         if (isNaN(amount) || amount < 0) return;
-        await base44.entities.Income.update(incomeId, { amount });
+        await actions.updateIncome({ id: incomeId, amount });
         setEditingId(null);
         setEditAmount("");
-        onRefresh();
     };
 
+    // Note: handleSaveName still uses base44 directly for other users
     const handleSaveName = async (userId) => {
         if (!editNameValue.trim()) return;
-
-        // Update current user if it's their own name, otherwise update via Users entity
+        
         if (userId === user.id) {
-            await base44.auth.updateMe({ full_name: editNameValue.trim() });
+            await updateMe({ full_name: editNameValue.trim() });
         } else {
+            // This is a bit of a special case for other users
+            const { base44 } = await import("@/api/client");
             await base44.entities.Users.update(userId, { name: editNameValue.trim() });
+            actions.refreshAll();
         }
 
         setEditingNameUserId(null);
         setEditNameValue("");
-        onRefreshMembers();
     };
 
     const memberIncomeMap = {};
@@ -90,44 +84,25 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
     const activeIncomes = incomes.filter(i => (i.amount || 0) > 0);
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
-            <CardHeader className="p-4 sm:pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" />
-                        Income Overview
-                    </CardTitle>
-                    {!addingIncome && (
-                        <Button
-                            size="sm"
-                            className="h-8 text-xs sm:h-9 sm:text-sm"
-                            onClick={() => {
-                                setAddingIncome(true);
-                                setNewAmount("");
-                                setAddingForUserId("");
-                            }}
-
-                        >
-                            {isOwner ? "Add Income" : "Add My Income"}
-                        </Button>
-                    )}
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-2 sm:space-y-3 min-h-[100px]">
-                {loading && !incomes.length ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-12 w-full rounded-xl" />
-                        <Skeleton className="h-12 w-full rounded-xl" />
-                    </div>
-                ) : (
-                    <>
-                        {loading && (
-                            <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                            </div>
-                        )}
-                            </>
-                )}
+        <SectionCard
+            title="Income Overview"
+            icon={DollarSign}
+            loading={isFetching}
+            actions={!addingIncome && (
+                <Button
+                    size="sm"
+                    className="h-8 text-xs sm:h-9 sm:text-sm"
+                    onClick={() => {
+                        setAddingIncome(true);
+                        setNewAmount("");
+                        setAddingForUserId("");
+                    }}
+                >
+                    {isOwner ? "Add Income" : "Add My Income"}
+                </Button>
+            )}
+        >
+            <div className="space-y-2 sm:space-y-3">
                 {addingIncome && (
                     <div className="flex items-center gap-2 p-2 sm:p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl border border-indigo-100 dark:border-indigo-800 flex-wrap">
                         {isOwner && (
@@ -144,7 +119,7 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
                         )}
                         {!isOwner && (
                             <span className="text-sm font-medium text-slate-700 dark:text-slate-300 min-w-0 truncate">
-                                {getUserName(user.id)}
+                                {getUserName(user.id, members)}
                             </span>
                         )}
                         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -311,7 +286,7 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
                                         key={income.id}
                                         className={`${colors[idx % colors.length]} transition-all duration-500`}
                                         style={{ width: `${pct}%` }}
-                                        title={`${getUserName(income.user)}: ${Math.round(pct)}%`}
+                                        title={`${getUserName(income.user, members)}: ${Math.round(pct)}%`}
                                     />
                                 );
                             })}
@@ -328,14 +303,14 @@ export default function IncomeSection({ group, incomes: rawIncomes, user, member
                                 return (
                                     <div key={income.id} className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
                                         <div className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${colors[idx % colors.length]}`} />
-                                        {getUserName(income.user)}
+                                        {getUserName(income.user, members)}
                                     </div>
                                 );
                             })}
                         </div>
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </SectionCard>
     );
 }
