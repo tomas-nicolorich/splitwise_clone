@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/client";
 import { useMemo } from "react";
-import { calculateCategorySplits } from "@/utils/financial-utils";
+import { calculateCategorySplitsOptimized } from "@/utils/financial-utils";
 import { getMappedIncomes } from "@/utils/utils";
 import { createPageUrl } from "@/utils";
 
@@ -54,7 +54,7 @@ export function useGroupData(groupId) {
     const incomes = useMemo(() => getMappedIncomes(rawIncomes), [rawIncomes]);
     
     const categorySplits = useMemo(() => {
-        return calculateCategorySplits(categories, rawIncomes, members, expenses);
+        return calculateCategorySplitsOptimized(categories, rawIncomes, members, expenses);
     }, [categories, rawIncomes, members, expenses]);
 
     // Derived State

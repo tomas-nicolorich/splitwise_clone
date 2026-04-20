@@ -28,7 +28,7 @@ export default function SectionCard({
             <CardHeader className="p-4 sm:pb-4">
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        {Icon && (typeof Icon === 'function' ? <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" /> : Icon)}
+                        {Icon && (React.isValidElement(Icon) ? Icon : React.createElement(Icon, { className: "w-4 h-4 sm:w-5 sm:h-5 text-indigo-500" }))}
                         {title}
                     </CardTitle>
                     {actions}
