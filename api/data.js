@@ -1,4 +1,5 @@
 import prisma from './lib/prisma.js'
+import { schemas } from './lib/schemas.js'
 
 export default async function handler(req, res) {
   const params = { ...req.query, ...req.body }
@@ -22,6 +23,15 @@ export default async function handler(req, res) {
       return value
     })
   }
+
+  const validateData = (data, schema) => {
+    if (!schema) return data;
+    const result = schema.safeParse(data);
+    if (!result.success) {
+      throw new Error(`Validation failed: ${result.error.message}`);
+    }
+    return result.data;
+  };
 
   const mapCriteria = (criteria) => {
     if (!criteria) return {}
@@ -133,7 +143,9 @@ export default async function handler(req, res) {
       }
       case 'create': {
         const { data } = params
-        const mappedData = await mapTypes(data, entity)
+        const entitySchema = schemas[entity];
+        const validatedData = validateData(data, entitySchema);
+        const mappedData = await mapTypes(validatedData, entity)
         
         // Sync sequence before creating to avoid Unique Constraint errors if data was manually inserted
         if (entity === 'Users') await syncSequence('Users')

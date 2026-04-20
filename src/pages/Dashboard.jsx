@@ -1,36 +1,16 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import GroupCard from "../components/groups/GroupCard.jsx";
-import CreateGroupDialog from "../components/groups/CreateGroupDialog";
-import { useAuth } from "../lib/AuthContext";
+import GroupCard from "../components/dashboard/GroupCard.jsx";
+import CreateGroupDialog from "../components/dashboard/CreateGroupDialog";
+import { useAuth } from "../contexts/AuthContext";
 import { DashboardSkeleton } from "@/components/ui/DashboardSkeleton";
+import { useGroups } from "@/hooks/use-groups";
 
 export default function Dashboard() {
     const { user } = useAuth();
     const [showCreate, setShowCreate] = useState(false);
-    const queryClient = useQueryClient();
-
-    const { data: groups = [], isLoading } = useQuery({
-        queryKey: ["groups"],
-        queryFn: () => base44.entities.Group.list("-created_date"),
-        enabled: !!user,
-    });
-
-    const myGroups = groups.filter(
-        (g) => g.members?.includes(user?.id)
-    );
-
-    const createMutation = useMutation({
-        mutationFn: (data) =>
-            base44.entities.Group.create({
-                ...data,
-                members: [user.id],
-            }),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ["groups"] }),
-    });
+    const { groups, isLoading, actions } = useGroups();
 
     if (!user) {
         return (
@@ -60,22 +40,22 @@ export default function Dashboard() {
                 </Button>
             </div>
 
-            {isLoading && groups.length === 0 ? (
+            {isLoading ? (
                 <DashboardSkeleton />
-            ) : myGroups.length === 0 ? (
+            ) : groups.length === 0 ? (
                 <div className="text-center py-20">
-                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+                    <div className="w-16 h-16 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center mx-auto mb-4">
                         <Plus className="w-7 h-7 text-indigo-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-700 mb-1">No groups yet</h3>
-                    <p className="text-slate-500 text-sm mb-4">Create your first group to start tracking income.</p>
+                    <h3 className="text-lg font-semibold text-slate-700 dark:text-slate-200 mb-1">No groups yet</h3>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mb-4">Create your first group to start tracking income.</p>
                     <Button onClick={() => setShowCreate(true)}>
                         Create Group
                     </Button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {myGroups.map((group) => (
+                    {groups.map((group) => (
                         <GroupCard key={group.id} group={group} />
                     ))}
                 </div>
@@ -84,7 +64,7 @@ export default function Dashboard() {
             <CreateGroupDialog
                 open={showCreate}
                 onOpenChange={setShowCreate}
-                onCreate={createMutation.mutateAsync}
+                onCreate={actions.createGroup}
             />
         </div>
     );

@@ -1,14 +1,21 @@
 import React, { useState, useMemo } from "react";
 import { format } from "date-fns";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Target, Users, Loader2, Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Target, Users, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/utils/utils";
+import { useGroupData } from "@/hooks/use-group-data";
+import SectionCard from "@/components/ui/SectionCard";
 
-export default function SavingTargetSection({ members, incomes, loading }) {
+export default function SavingTargetSection({ groupId }) {
+    const { 
+        members, 
+        incomes, 
+        isFetching: loading 
+    } = useGroupData(groupId);
+
     const [targetAmount, setTargetAmount] = useState("");
     const [targetDate, setTargetDate] = useState(undefined);
     const [startingBalance, setStartingBalance] = useState("");
@@ -92,22 +99,12 @@ export default function SavingTargetSection({ members, incomes, loading }) {
     }, [targetAmount, targetDate, startingBalance, monthlyExpenses, members, incomes, manualContributions]);
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
-            <CardHeader className="p-4 sm:pb-4">
-                <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-3 dark:text-white">
-                    <div className="bg-indigo-50 dark:bg-indigo-900/40 p-1.5 rounded-lg">
-                        <Target className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    Saving Target Calculator
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-4">
-                {loading && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
-                    </div>
-                )}
-                
+        <SectionCard
+            title="Saving Target Calculator"
+            icon={Target}
+            loading={loading}
+        >
+            <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 ml-1">Target Amount</label>
@@ -282,7 +279,7 @@ export default function SavingTargetSection({ members, incomes, loading }) {
                         {calculation.error}
                     </div>
                 )}
-            </CardContent>
-        </Card>
+            </div>
+        </SectionCard>
     );
 }

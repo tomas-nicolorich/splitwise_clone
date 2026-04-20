@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -9,10 +8,13 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { base44 } from "@/api/client";
-import { Receipt, Plus, Trash2, Pencil, Loader2, List } from "lucide-react";
+import { Receipt, Plus, Trash2, Pencil, List } from "lucide-react";
 import { format } from "date-fns";
 import AddExpenseDialog from "./AddExpenseDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { useGroupData } from "@/hooks/use-group-data";
+import SectionCard from "@/components/ui/SectionCard";
+import { getUserName } from "@/utils/utils";
 
 import {
     AlertDialog,
@@ -26,8 +28,8 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdit, handleDelete }) => {
-    const category = categories.find(c => c.id === expense.category_id);
+const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, handleDelete }) => {
+    const category = categories.find(c => String(c.id) === String(expense.category_id));
     return (
         <div
             className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
@@ -40,7 +42,7 @@ const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdi
                     <span className="px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-medium">
                         {category?.name || "Unknown"}
                     </span>
-                    <span>Paid by {getUserName(expense.paid_by)}</span>
+                    <span>Paid by {getUserName(expense.paid_by, members)}</span>
                     {expense.date && (
                         <span>• {format(new Date(expense.date), "MMM d, yyyy")}</span>
                     )}
@@ -75,27 +77,33 @@ const ExpenseRow = ({ expense, categories, user, isOwner, getUserName, handleEdi
     );
 };
 
-export default function ExpensesSection({ group, expenses, categories, user, members, onRefresh, loading, fullMode = false }) {
+const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propExpenses, fullMode = false }) {
+    const { user } = useAuth();
+    const { 
+        group, 
+        expenses: hookExpenses, 
+        categories, 
+        members, 
+        isFetching, 
+        actions 
+    } = useGroupData(groupId);
+
     const [showAdd, setShowAdd] = useState(false);
     const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [loadingClear, setLoadingClear] = useState(false);
 
-    const isOwner = group.members?.[0] === user.id;
-
-    const getUserName = (userId) => {
-        const member = members.find(m => m.id === userId);
-        return member ? member.name : "Unknown User";
-    };
+    // Use prop expenses if provided (e.g. for filtered view), otherwise use hook expenses
+    const expenses = propExpenses || hookExpenses;
+    const isOwner = group?.members?.[0] === user.id;
 
     const handleClearAll = async () => {
         setLoadingClear(true);
         try {
             // Delete all expenses one by one
             for (const expense of expenses) {
-                await base44.entities.Expense.delete(expense.id);
+                await actions.deleteExpense(expense.id);
             }
-            onRefresh();
             setShowAllExpenses(false);
         } catch (e) {
             console.error("Error clearing expenses:", e);
@@ -110,8 +118,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
     };
 
     const handleDelete = async (id) => {
-        await base44.entities.Expense.delete(id);
-        onRefresh();
+        await actions.deleteExpense(id);
     };
 
     const sortedExpenses = Array.isArray(expenses) ? [...expenses]
@@ -124,43 +131,42 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
 
     const displayedExpenses = fullMode ? sortedExpenses : sortedExpenses.slice(0, 5);
 
-    const content = (
-        <div className="relative min-h-[100px]">
-            {loading && (
-                <div className="absolute inset-0 bg-white/50 dark:bg-slate-800/50 backdrop-blur-[1px] flex items-center justify-center z-10">
-                    <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+    const expenseList = (
+        <div className="space-y-2">
+            {displayedExpenses.map((expense) => (
+                <ExpenseRow
+                    key={expense.id}
+                    expense={expense}
+                    categories={categories}
+                    user={user}
+                    isOwner={isOwner}
+                    members={members}
+                    handleEdit={handleEdit}
+                    handleDelete={handleDelete}
+                />
+            ))}
+            
+            {(!fullMode && sortedExpenses.length > 5) && (
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
+                    <Link to={`/AllExpenses?id=${groupId}`}>
+                        <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 w-full">
+                            View All Expenses
+                        </Button>
+                    </Link>
                 </div>
             )}
-            {expenses.length === 0 ? (
-                <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
-                    No expenses yet. Add one to track shared costs.
-                </p>
-            ) : (
-                <div className="space-y-2">
-                    {displayedExpenses.map((expense) => (
-                        <ExpenseRow
-                            key={expense.id}
-                            expense={expense}
-                            categories={categories}
-                            user={user}
-                            isOwner={isOwner}
-                            getUserName={getUserName}
-                            handleEdit={handleEdit}
-                            handleDelete={handleDelete}
-                        />
-                    ))}
-                    
-                    {(!fullMode && sortedExpenses.length > 5) && (
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
-                            <Link to={`/AllExpenses?id=${group.id}`}>
-                                <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 w-full">
-                                    View All Expenses
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            )}
+        </div>
+    );
+
+    const emptyState = (
+        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
+            No expenses yet. Add one to track shared costs.
+        </p>
+    );
+
+    const sectionContent = (
+        <>
+            {expenses.length === 0 ? emptyState : expenseList}
 
             <AddExpenseDialog 
                 open={showAdd}
@@ -169,11 +175,7 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                     if (!open) setEditingExpense(null);
                 }}
                 editingExpense={editingExpense}
-                group={group}
-                categories={categories}
-                user={user}
-                members={members}
-                onRefresh={onRefresh}
+                groupId={groupId}
             />
 
             {/* View All Modal */}
@@ -194,13 +196,9 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                                     categories={categories}
                                     user={user}
                                     isOwner={isOwner}
-                                    getUserName={getUserName}
-                                    handleEdit={(exp) => {
-                                        handleEdit(exp);
-                                    }}
-                                    handleDelete={(id) => {
-                                        handleDelete(id);
-                                    }}
+                                    members={members}
+                                    handleEdit={handleEdit}
+                                    handleDelete={handleDelete}
                                 />
                             ))}
                         </div>
@@ -236,38 +234,34 @@ export default function ExpensesSection({ group, expenses, categories, user, mem
                     )}
                 </DialogContent>
             </Dialog>
-        </div>
+        </>
     );
 
     if (fullMode) {
-        return content;
+        return sectionContent;
     }
 
     return (
-        <Card className="border-slate-200 dark:border-slate-700 dark:bg-slate-800 relative overflow-hidden">
-            <CardHeader className="p-4 sm:pb-4">
-                <div className="flex items-center justify-between">
-                    <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2 dark:text-white">
-                        <Receipt className="w-4 h-4 sm:w-5 sm:h-5 text-rose-500" />
-                        Expenses
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                        {!fullMode && (
-                            <Link to={`/AllExpenses?id=${group.id}`}>
-                                <Button variant="indigo" size="sm" className="h-8 text-xs">
-                                    <List className="w-3.5 h-3.5 mr-1" /> View All
-                                </Button>
-                            </Link>
-                        )}
-                        <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
-                            <Plus className="w-3.5 h-3.5 mr-1" /> Add
+        <SectionCard
+            title="Expenses"
+            icon={Receipt}
+            loading={isFetching}
+            actions={
+                <div className="flex items-center gap-2">
+                    <Link to={`/AllExpenses?id=${groupId}`}>
+                        <Button variant="indigo" size="sm" className="h-8 text-xs">
+                            <List className="w-3.5 h-3.5 mr-1" /> View All
                         </Button>
-                    </div>
+                    </Link>
+                    <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
+                        <Plus className="w-3.5 h-3.5 mr-1" /> Add
+                    </Button>
                 </div>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-                {content}
-            </CardContent>
-        </Card>
+            }
+        >
+            {sectionContent}
+        </SectionCard>
     );
-}
+});
+
+export default ExpensesSection;

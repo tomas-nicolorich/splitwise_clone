@@ -54,17 +54,20 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const logout = async (shouldRedirect = true) => {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error('[Auth] Logout error:', error);
-        }
-        if (shouldRedirect) {
-            window.location.href = '/login';
-        }
+        await base44.auth.logout(shouldRedirect);
+    };
+
+    const updateMe = async (data) => {
+        const updatedUser = await base44.auth.updateMe(data);
+        // Refresh local user state
+        const session = (await supabase.auth.getSession()).data.session;
+        const fullUser = await base44.auth.me(session);
+        setUser(fullUser);
+        return updatedUser;
     };
 
     const navigateToLogin = () => {
-        window.location.href = '/login';
+        base44.auth.redirectToLogin();
     };
 
     return (
@@ -75,6 +78,7 @@ export const AuthProvider = ({ children }) => {
             isLoadingPublicSettings,
             authError,
             logout,
+            updateMe,
             navigateToLogin,
             checkAppState: async () => {} // Simplified for now
         }}>

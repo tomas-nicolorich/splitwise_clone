@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
-import { base44 } from "@/api/client";
 import { LogOut, PieChart, Menu, X, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import SetupProfileModal from "./components/SetupProfileModal";
-import ProfileModal from "./components/ProfileModal";
-import { useAuth } from "./lib/AuthContext";
+import SetupProfileModal from "./components/auth/SetupProfileModal";
+import ProfileModal from "./components/auth/ProfileModal";
+import { useAuth } from "./contexts/AuthContext";
 
 export default function Layout({ children, currentPageName }) {
     const { user } = useAuth();
@@ -74,7 +73,7 @@ export default function Layout({ children, currentPageName }) {
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => base44.auth.logout()}
+                                        onClick={() => logout()}
                                         className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                     >
                                         <LogOut className="w-4 h-4" />
@@ -117,7 +116,7 @@ export default function Layout({ children, currentPageName }) {
                             {darkMode ? 'Light Mode' : 'Dark Mode'}
                         </button>
                         <button
-                            onClick={() => base44.auth.logout()}
+                            onClick={() => logout()}
                             className="block py-2 text-sm font-medium text-slate-500 dark:text-slate-400"
                         >
                             Sign Out

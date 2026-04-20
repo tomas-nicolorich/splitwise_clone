@@ -67,6 +67,7 @@ model BudgetCategory {
   Group      Group     @relation(fields: [group_id], references: [id], onDelete: Cascade)
   Expense    Expense[]
 
+  @@index([group_id])
   @@schema("public")
 }
 
@@ -84,6 +85,8 @@ model Expense {
   Group          Group          @relation(fields: [group_id], references: [id], onDelete: Cascade)
   Users          Users          @relation(fields: [paid_by], references: [id], onUpdate: Restrict)
 
+  @@index([group_id, date])
+  @@index([category_id])
   @@schema("public")
 }
 
@@ -112,6 +115,7 @@ model Income {
   Group      Group     @relation(fields: [group_id], references: [id], onDelete: Cascade)
   Users      Users     @relation(fields: [user], references: [id], onUpdate: Restrict)
 
+  @@index([group_id])
   @@id([id, group_id, user])
   @@schema("public")
 }
