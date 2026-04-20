@@ -9,10 +9,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
-import { useAuth } from "../lib/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "@/lib/supabase-client";
 
 
@@ -20,7 +19,7 @@ import { supabase } from "@/lib/supabase-client";
 const EMOJIS = ["👤", "🐱", "🐶", "🦊", "🦁", "🐸", "🐵", "🦄", "🌈", "⭐", "🔥", "💎", "🍕", "🎨", "🚀"];
 
 export default function SetupProfileModal() {
-    const { user } = useAuth();
+    const { user, updateMe } = useAuth();
     const [open, setOpen] = useState(false);
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
@@ -65,7 +64,7 @@ export default function SetupProfileModal() {
 
         try {
             // Update name and icon in DB
-            await base44.auth.updateMe({
+            await updateMe({
                 full_name: name.trim()
             });
 
@@ -78,8 +77,6 @@ export default function SetupProfileModal() {
 
             toast.success("Profile updated!");
             setOpen(false);
-            // Refresh page to update everything
-            window.location.reload();
         } catch (e) {
             console.error("Error updating profile:", e);
             toast.error(e.message || "Failed to update profile.");

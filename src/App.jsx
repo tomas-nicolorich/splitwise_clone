@@ -1,16 +1,18 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { queryClientInstance } from '@/lib/query-client'
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
-import { AuthProvider, useAuth } from '@/lib/AuthContext';
-import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import PageNotFound from './pages/PageNotFound';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import UserNotRegisteredError from '@/components/auth/UserNotRegisteredError';
 import Dashboard from './pages/Dashboard';
 import GroupDetail from './pages/GroupDetail';
 import SavingTargetPage from './pages/SavingTargetPage';
 import AllExpensesPage from './pages/AllExpensesPage';
 import Login from './pages/Login';
 import Layout from './Layout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const AuthenticatedApp = () => {
     const { isLoadingAuth, isAuthenticated, user } = useAuth();
@@ -50,13 +52,17 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+    const isDev = import.meta.env.DEV;
 
     return (
         <AuthProvider>
             <QueryClientProvider client={queryClientInstance}>
                 <Router>
-                    <AuthenticatedApp />
+                    <ErrorBoundary>
+                        <AuthenticatedApp />
+                    </ErrorBoundary>
                 </Router>
+                {isDev && <ReactQueryDevtools initialIsOpen={false} />}
                 <Toaster />
             </QueryClientProvider>
         </AuthProvider>

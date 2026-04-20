@@ -1,6 +1,4 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
@@ -22,7 +20,9 @@ import BudgetSection from "../components/group-detail/BudgetSection";
 import ExpensesSection from "../components/group-detail/ExpensesSection";
 import BudgetTransfersSection from "../components/group-detail/BudgetTransfersSection";
 import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
-import { useAuth } from "../lib/AuthContext";
+import { useAuth } from "../contexts/AuthContext";
+
+import { useGroupData } from "../hooks/use-group-data";
 
 export default function GroupDetail() {
     const [searchParams] = useSearchParams();
@@ -30,81 +30,19 @@ export default function GroupDetail() {
     const { user } = useAuth();
     const [showInvite, setShowInvite] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const queryClient = useQueryClient();
 
-    const { data: group, isLoading: groupLoading } = useQuery({
-        queryKey: ["group", groupId],
-        queryFn: async () => {
-            const groups = await base44.entities.Group.filter({ id: groupId });
-            return groups[0];
-        },
-        enabled: !!groupId,
-    });
+    const {
+        group,
+        members,
+        incomes,
+        categories,
+        expenses,
+        isLoading,
+        isFetching,
+        actions
+    } = useGroupData(groupId);
 
-    const { data: members = [], isFetching: isFetchingMembers } = useQuery({
-        queryKey: ["members", groupId],
-        queryFn: async () => {
-            if (!group?.members?.length) return [];
-            return base44.entities.Users.filter({ id: { $in: group.members } });
-        },
-        enabled: !!group?.members?.length,
-    });
-
-    const { data: incomes = [], isFetching: isFetchingIncomes } = useQuery({
-        queryKey: ["incomes", groupId],
-        queryFn: () => base44.entities.Income.filter({ group_id: groupId }),
-        enabled: !!groupId,
-    });
-
-    const { data: categories = [], isFetching: isFetchingCategories } = useQuery({
-        queryKey: ["categories", groupId],
-        queryFn: () => base44.entities.BudgetCategory.filter({ group_id: groupId }),
-        enabled: !!groupId,
-    });
-
-    const { data: expenses = [], isFetching: isFetchingExpenses } = useQuery({
-        queryKey: ["expenses", groupId],
-        queryFn: () => base44.entities.Expense.filter({ group_id: groupId }),
-        enabled: !!groupId,
-    });
-
-    const refreshIncomes = () => queryClient.invalidateQueries({ queryKey: ["incomes", groupId] });
-    const refreshCategories = () => queryClient.invalidateQueries({ queryKey: ["categories", groupId] });
-    const refreshExpenses = () => queryClient.invalidateQueries({ queryKey: ["expenses", groupId] });
-    const refreshMembers = () => {
-        queryClient.invalidateQueries({ queryKey: ["group", groupId] });
-        queryClient.invalidateQueries({ queryKey: ["members", group?.members] });
-    };
-
-    const refreshAll = () => {
-        refreshIncomes();
-        refreshCategories();
-        refreshExpenses();
-        refreshMembers();
-    };
-
-    const handleDeleteGroup = async () => {
-        try {
-            // Delete all related data
-            for (const income of incomes) {
-                await base44.entities.Income.delete(income.id);
-            }
-            for (const cat of categories) {
-                await base44.entities.BudgetCategory.delete(cat.id);
-            }
-            for (const expense of expenses) {
-                await base44.entities.Expense.delete(expense.id);
-            }
-            await base44.entities.Group.delete(group.id);
-            window.location.href = createPageUrl("Dashboard");
-        } catch (error) {
-            console.error("Failed to delete group:", error);
-            setShowDeleteConfirm(false);
-            alert("Failed to delete group. Please try again.");
-        }
-    };
-
-    if (groupLoading || !user) {
+    if (isLoading || !user) {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
@@ -170,7 +108,7 @@ export default function GroupDetail() {
 
             {/* Members strip */}
             <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-                {members.map((member, idx) => (
+                {members.map((member) => (
                     <div
                         key={member.id}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
@@ -182,7 +120,7 @@ export default function GroupDetail() {
                         </div>
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                             {member.name}
-                            {group.members[0] === member.id && (
+                            {group.members?.[0] === member.id && (
                                 <span className="text-indigo-500 dark:text-indigo-400 ml-1">• Owner</span>
                             )}
                         </span>
@@ -194,47 +132,23 @@ export default function GroupDetail() {
                 {/* Left Column: Data Entry */}
                 <div className="space-y-4 sm:space-y-6">
                     <IncomeSection
-                        group={group}
-                        incomes={incomes}
-                        user={user}
-                        members={members}
-                        onRefresh={refreshIncomes}
-                        onRefreshMembers={refreshMembers}
-                        loading={isFetchingIncomes || isFetchingMembers}
+                        groupId={groupId}
                     />
                     <RemainingBalanceSection
-                        categories={categories}
-                        incomes={incomes}
-                        members={members}
-                        expenses={expenses}
-                        loading={isFetchingIncomes || isFetchingCategories || isFetchingMembers || isFetchingExpenses}
+                        groupId={groupId}
                     />
                     <ExpensesSection
-                        group={group}
-                        expenses={expenses}
-                        categories={categories}
-                        user={user}
-                        members={members}
-                        onRefresh={refreshExpenses}
-                        loading={isFetchingExpenses || isFetchingMembers}
+                        groupId={groupId}
                     />
                     <BudgetTransfersSection
-                        expenses={expenses}
-                        members={members}
-                        loading={isFetchingExpenses || isFetchingMembers}
+                        groupId={groupId}
                     />
                 </div>
 
                 {/* Right Column: Analysis & Planning */}
                 <div className="space-y-4 sm:space-y-6">
                     <BudgetSection
-                        group={group}
-                        categories={categories}
-                        incomes={incomes}
-                        expenses={expenses}
-                        members={members}
-                        onRefresh={refreshAll}
-                        loading={isFetchingCategories || isFetchingIncomes || isFetchingExpenses || isFetchingMembers}
+                        groupId={groupId}
                     />
                 </div>
             </div>
@@ -244,8 +158,7 @@ export default function GroupDetail() {
             <InviteMemberDialog
                 open={showInvite}
                 onOpenChange={setShowInvite}
-                group={group}
-                onMemberAdded={refreshAll}
+                groupId={groupId}
             />
 
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -259,7 +172,7 @@ export default function GroupDetail() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={handleDeleteGroup}
+                            onClick={actions.deleteGroup}
                             className="bg-red-600 hover:bg-red-700"
                         >
                             Delete
