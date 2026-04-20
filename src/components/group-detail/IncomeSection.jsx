@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,7 +8,7 @@ import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
 
-export default function IncomeSection({ groupId }) {
+const IncomeSection = memo(function IncomeSection({ groupId }) {
     const { user, updateMe } = useAuth();
     const { 
         group, 
@@ -313,4 +313,6 @@ export default function IncomeSection({ groupId }) {
             </div>
         </SectionCard>
     );
-}
+});
+
+export default IncomeSection;

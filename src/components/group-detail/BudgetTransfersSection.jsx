@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -49,7 +49,7 @@ const TransferRow = ({ transfer, members }) => {
     );
 };
 
-export default function BudgetTransfersSection({ groupId }) {
+const BudgetTransfersSection = memo(function BudgetTransfersSection({ groupId }) {
     const { 
         expenses, 
         members, 
@@ -124,4 +124,6 @@ export default function BudgetTransfersSection({ groupId }) {
             </Dialog>
         </SectionCard>
     );
-}
+});
+
+export default BudgetTransfersSection;

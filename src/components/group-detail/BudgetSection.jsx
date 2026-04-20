@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, Plus, Trash2, Users, Pencil, ArrowRightLeft } from "lucide-react";
 import { useGroupData } from "@/hooks/use-group-data";
@@ -7,7 +7,7 @@ import { getUserName } from "@/utils/utils";
 import BudgetCategoryDialog from "./BudgetCategoryDialog";
 import BudgetTransferDialog from "./BudgetTransferDialog";
 
-export default function BudgetSection({ groupId }) {
+const BudgetSection = memo(function BudgetSection({ groupId }) {
     const { 
         group, 
         categories, 
@@ -284,4 +284,6 @@ export default function BudgetSection({ groupId }) {
             />
         </>
     );
-}
+});
+
+export default BudgetSection;

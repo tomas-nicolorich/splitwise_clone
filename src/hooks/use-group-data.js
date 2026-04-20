@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/client";
+import { fetchGroupDataBatch } from "@/api/batch-queries";
 import { useMemo } from "react";
 import { calculateCategorySplitsOptimized } from "@/utils/financial-utils";
 import { getMappedIncomes } from "@/utils/utils";
@@ -47,6 +48,12 @@ export function useGroupData(groupId) {
     const { data: expenses = [], isFetching: isFetchingExpenses } = useQuery({
         queryKey: ["expenses", groupId],
         queryFn: () => base44.entities.Expense.filter({ group_id: groupId }),
+        enabled: !!groupId,
+    });
+
+    const { data: batchData } = useQuery({
+        queryKey: ["groupBatch", groupId],
+        queryFn: () => fetchGroupDataBatch(groupId),
         enabled: !!groupId,
     });
 

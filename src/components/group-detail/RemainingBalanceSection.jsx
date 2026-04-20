@@ -1,9 +1,9 @@
-import React, { useMemo } from "react";
+import React, { useMemo, memo } from "react";
 import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 
-export default function RemainingBalanceSection({ groupId }) {
+const RemainingBalanceSection = memo(function RemainingBalanceSection({ groupId }) {
     const { 
         members, 
         incomes, 
@@ -82,4 +82,6 @@ export default function RemainingBalanceSection({ groupId }) {
             </div>
         </SectionCard>
     );
-}
+});
+
+export default RemainingBalanceSection;

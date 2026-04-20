@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, memo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -77,7 +77,7 @@ const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, h
     );
 };
 
-export default function ExpensesSection({ groupId, expenses: propExpenses, fullMode = false }) {
+const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propExpenses, fullMode = false }) {
     const { user } = useAuth();
     const { 
         group, 
@@ -262,4 +262,6 @@ export default function ExpensesSection({ groupId, expenses: propExpenses, fullM
             {sectionContent}
         </SectionCard>
     );
-}
+});
+
+export default ExpensesSection;
