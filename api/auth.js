@@ -1,27 +1,10 @@
 import prisma from './lib/prisma.js'
 import { supabaseAdmin } from './lib/supabase-admin.js'
+import { serializeBigInt, syncSequence } from './lib/db-utils.js'
 
 export default async function handler(req, res) {
   const params = { ...req.query, ...req.body }
   const { operation } = params
-
-  // Helper to serialize BigInt
-  const serialize = (data) => {
-    return JSON.parse(JSON.stringify(data, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ))
-  }
-
-  // Helper to fix Postgres sequence if IDs were inserted manually (avoids P2002 error)
-  const syncSequence = async (tableName) => {
-    try {
-        // This is specifically for PostgreSQL with Prisma generated tables
-        await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id),0) + 1, false) FROM "${tableName}";`)
-    } catch (e) {
-        // Ignore if sequence doesn't exist or not PostgreSQL
-        console.warn(`Could not sync sequence for ${tableName}:`, e.message)
-    }
-  }
 
   try {
     switch (operation) {
@@ -55,7 +38,7 @@ export default async function handler(req, res) {
           id: user.id.toString(),
           name: user.name
         }
-        return res.status(200).json(serialize(mappedUser))
+        return res.status(200).json(serializeBigInt(mappedUser))
       }
       case 'invite': {
         const { email } = req.body || {}
@@ -111,7 +94,7 @@ export default async function handler(req, res) {
           id: updatedUser.id.toString(),
           name: updatedUser.name
         }
-        return res.status(200).json(serialize(mappedUser))
+        return res.status(200).json(serializeBigInt(mappedUser))
       }
       case 'logout':
         return res.status(200).json({ success: true })

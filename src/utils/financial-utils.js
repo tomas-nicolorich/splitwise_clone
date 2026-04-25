@@ -1,8 +1,8 @@
 
 function memoize(fn) {
     const cache = new Map();
-    return function(...args) {
-        const key = JSON.stringify(args);
+    return function(groupId, version, ...args) {
+        const key = `${groupId}-${version}`;
         if (cache.has(key)) {
             return cache.get(key);
         }

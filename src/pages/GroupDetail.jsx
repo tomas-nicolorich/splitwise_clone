@@ -21,26 +21,16 @@ import ExpensesSection from "../components/group-detail/ExpensesSection";
 import BudgetTransfersSection from "../components/group-detail/BudgetTransfersSection";
 import RemainingBalanceSection from "../components/group-detail/RemainingBalanceSection";
 import { useAuth } from "../contexts/AuthContext";
+import { GroupProvider, useGroup } from "../contexts/GroupContext";
 
-import { useGroupData } from "../hooks/use-group-data";
-
-export default function GroupDetail() {
+function GroupDetailContent() {
     const [searchParams] = useSearchParams();
     const groupId = searchParams.get("id");
     const { user } = useAuth();
     const [showInvite, setShowInvite] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-    const {
-        group,
-        members,
-        incomes,
-        categories,
-        expenses,
-        isLoading,
-        isFetching,
-        actions
-    } = useGroupData(groupId);
+    const { group, isLoading } = useGroup();
 
     if (isLoading || !user) {
         return (
@@ -108,7 +98,7 @@ export default function GroupDetail() {
 
             {/* Members strip */}
             <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-                {members.map((member) => (
+                {(group.membersList || []).map((member) => (
                     <div
                         key={member.id}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
@@ -131,25 +121,15 @@ export default function GroupDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
                 {/* Left Column: Data Entry */}
                 <div className="space-y-4 sm:space-y-6">
-                    <IncomeSection
-                        groupId={groupId}
-                    />
-                    <RemainingBalanceSection
-                        groupId={groupId}
-                    />
-                    <ExpensesSection
-                        groupId={groupId}
-                    />
-                    <BudgetTransfersSection
-                        groupId={groupId}
-                    />
+                    <IncomeSection />
+                    <RemainingBalanceSection />
+                    <ExpensesSection />
+                    <BudgetTransfersSection />
                 </div>
 
                 {/* Right Column: Analysis & Planning */}
                 <div className="space-y-4 sm:space-y-6">
-                    <BudgetSection
-                        groupId={groupId}
-                    />
+                    <BudgetSection />
                 </div>
             </div>
 
@@ -172,7 +152,7 @@ export default function GroupDetail() {
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
-                            onClick={actions.deleteGroup}
+                            // onClick={actions.deleteGroup}
                             className="bg-red-600 hover:bg-red-700"
                         >
                             Delete
@@ -181,5 +161,15 @@ export default function GroupDetail() {
                 </AlertDialogContent>
             </AlertDialog>
         </div>
+    );
+}
+
+export default function GroupDetail() {
+    const [searchParams] = useSearchParams();
+    const groupId = searchParams.get("id");
+    return (
+        <GroupProvider groupId={groupId}>
+            <GroupDetailContent />
+        </GroupProvider>
     );
 }

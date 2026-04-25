@@ -2,7 +2,21 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '@/lib/supabase-client';
 import { base44 } from '@/api/client';
 
-const AuthContext = createContext();
+/**
+ * @typedef {Object} AuthContextValue
+ * @property {any} user
+ * @property {boolean} isAuthenticated
+ * @property {boolean} isLoadingAuth
+ * @property {boolean} isLoadingPublicSettings
+ * @property {Error|null} authError
+ * @property {function} logout
+ * @property {function} updateMe
+ * @property {function} navigateToLogin
+ * @property {function} checkAppState
+ */
+
+/** @type {React.Context<AuthContextValue>} */
+const AuthContext = createContext(/** @type {AuthContextValue} */ ({}));
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);

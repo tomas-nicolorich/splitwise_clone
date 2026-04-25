@@ -22,8 +22,20 @@ export const GroupSchema = z.object({
   description: z.string().optional(),
 });
 
+export const BudgetCategorySchema = z.object({
+  group_id: BigIntString,
+  name: z.string().min(1),
+});
+
+export const UserSchema = z.object({
+  auth_id: z.string().uuid(),
+  name: z.string().min(1),
+});
+
 export const schemas = {
   Expense: ExpenseSchema,
   Income: IncomeSchema,
   Group: GroupSchema,
+  BudgetCategory: BudgetCategorySchema,
+  Users: UserSchema,
 };

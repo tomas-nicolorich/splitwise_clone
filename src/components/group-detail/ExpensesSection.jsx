@@ -12,9 +12,10 @@ import { Receipt, Plus, Trash2, Pencil, List } from "lucide-react";
 import { format } from "date-fns";
 import AddExpenseDialog from "./AddExpenseDialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGroupData } from "@/hooks/use-group-data";
+import { useGroup } from "@/contexts/GroupContext";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
+import { base44 } from "@/api/client";
 
 import {
     AlertDialog,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, handleDelete }) => {
-    const category = categories.find(c => String(c.id) === String(expense.category_id));
+    const category = categories?.find(c => String(c.id) === String(expense.category_id));
     return (
         <div
             className="flex items-center justify-between p-2 sm:p-3 rounded-lg border border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors gap-2"
@@ -77,34 +78,32 @@ const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, h
     );
 };
 
-const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propExpenses, fullMode = false }) {
+const ExpensesSection = memo(function ExpensesSection({ expenses: propExpenses, fullMode = false }) {
     const { user } = useAuth();
     const { 
         group, 
         expenses: hookExpenses, 
         categories, 
-        members, 
-        isFetching, 
-        actions 
-    } = useGroupData(groupId);
+        isLoading 
+    } = useGroup();
 
     const [showAdd, setShowAdd] = useState(false);
     const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const [loadingClear, setLoadingClear] = useState(false);
 
-    // Use prop expenses if provided (e.g. for filtered view), otherwise use hook expenses
-    const expenses = propExpenses || hookExpenses;
-    const isOwner = group?.members?.[0] === user.id;
+    const expenses = propExpenses || hookExpenses || [];
+    const members = group?.membersList || [];
+    const isOwner = group?.members?.[0] === user?.id;
 
     const handleClearAll = async () => {
         setLoadingClear(true);
         try {
-            // Delete all expenses one by one
             for (const expense of expenses) {
-                await actions.deleteExpense(expense.id);
+                await base44.entities.Expense.delete(expense.id, group.id);
             }
             setShowAllExpenses(false);
+            window.location.reload();
         } catch (e) {
             console.error("Error clearing expenses:", e);
         } finally {
@@ -118,16 +117,17 @@ const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propE
     };
 
     const handleDelete = async (id) => {
-        await actions.deleteExpense(id);
+        await base44.entities.Expense.delete(id, group.id);
+        window.location.reload();
     };
 
-    const sortedExpenses = Array.isArray(expenses) ? [...expenses]
+    const sortedExpenses = [...expenses]
         .filter(e => !e.description?.startsWith('[BUDGET_TRANSFER]'))
         .sort((a, b) => {
             const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
             const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
             return dateB - dateA;
-        }) : [];
+        });
 
     const displayedExpenses = fullMode ? sortedExpenses : sortedExpenses.slice(0, 5);
 
@@ -148,11 +148,9 @@ const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propE
             
             {(!fullMode && sortedExpenses.length > 5) && (
                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 text-center">
-                    <Link to={`/AllExpenses?id=${groupId}`}>
-                        <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 w-full">
-                            View All Expenses
-                        </Button>
-                    </Link>
+                    <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30 w-full" onClick={() => setShowAllExpenses(true)}>
+                        View All Expenses
+                    </Button>
                 </div>
             )}
         </div>
@@ -175,10 +173,9 @@ const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propE
                     if (!open) setEditingExpense(null);
                 }}
                 editingExpense={editingExpense}
-                groupId={groupId}
+                groupId={group?.id}
             />
 
-            {/* View All Modal */}
             <Dialog open={showAllExpenses} onOpenChange={setShowAllExpenses}>
                 <DialogContent className="sm:max-w-2xl dark:bg-slate-800 dark:border-slate-700 h-[80vh] !flex !flex-col p-0 gap-0 overflow-hidden">
                     <DialogHeader className="p-6 pb-2 shrink-0 border-b dark:border-slate-700">
@@ -245,14 +242,12 @@ const ExpensesSection = memo(function ExpensesSection({ groupId, expenses: propE
         <SectionCard
             title="Expenses"
             icon={Receipt}
-            loading={isFetching}
+            loading={isLoading}
             actions={
                 <div className="flex items-center gap-2">
-                    <Link to={`/AllExpenses?id=${groupId}`}>
-                        <Button variant="indigo" size="sm" className="h-8 text-xs">
-                            <List className="w-3.5 h-3.5 mr-1" /> View All
-                        </Button>
-                    </Link>
+                    <Button variant="indigo" size="sm" className="h-8 text-xs" onClick={() => setShowAllExpenses(true)}>
+                        <List className="w-3.5 h-3.5 mr-1" /> View All
+                    </Button>
                     <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => setShowAdd(true)}>
                         <Plus className="w-3.5 h-3.5 mr-1" /> Add
                     </Button>

@@ -1,5 +1,6 @@
 import prisma from './lib/prisma.js'
 import { schemas } from './lib/schemas.js'
+import { serializeBigInt, syncSequence, resolveUuidToBigInt } from './lib/db-utils.js'
 
 export default async function handler(req, res) {
   const params = { ...req.query, ...req.body }
@@ -9,12 +10,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Invalid entity: ${entity}` })
   }
 
-  // Helper to serialize BigInt and Decimal
+  // Helper to serialize BigInt and Decimal (local specific logic for Amount/Income)
   const serialize = (data) => {
-    return JSON.parse(JSON.stringify(data, (key, value) => {
-      if (typeof value === 'bigint') return value.toString()
-      return value
-    }), (key, value) => {
+    return JSON.parse(JSON.stringify(serializeBigInt(data)), (key, value) => {
       // Convert amount/income back to Number for calculation convenience on frontend
       if ((key === 'amount' || key === 'income') && typeof value === 'string') {
         const num = Number(value)
@@ -69,9 +67,9 @@ export default async function handler(req, res) {
           newData[key] = BigInt(newData[key])
         } else if (uuidRegex.test(newData[key])) {
           // Resolve UUID to BigInt ID
-          let user = await prisma.Users.findFirst({ where: { auth_id: newData[key] } })
-          if (user) {
-            newData[key] = user.id
+          const bigIntId = await resolveUuidToBigInt(newData[key]);
+          if (bigIntId) {
+            newData[key] = bigIntId;
           }
         }
       }
@@ -82,9 +80,9 @@ export default async function handler(req, res) {
             if (/^\d+$/.test(id)) {
               resolvedMembers.push(BigInt(id))
             } else if (uuidRegex.test(id)) {
-              let user = await prisma.Users.findFirst({ where: { auth_id: id } })
-              if (user) resolvedMembers.push(user.id)
-              else resolvedMembers.push(id)
+              const bigIntId = await resolveUuidToBigInt(id);
+              if (bigIntId) resolvedMembers.push(bigIntId);
+              else resolvedMembers.push(id);
             } else {
               resolvedMembers.push(id)
             }
@@ -107,17 +105,6 @@ export default async function handler(req, res) {
     if (!item) return item
     const result = serialize(item)
     return result
-  }
-
-  // Helper to fix Postgres sequence if IDs were inserted manually (avoids P2002 error)
-  const syncSequence = async (tableName) => {
-    try {
-        // This is specifically for PostgreSQL with Prisma generated tables
-        await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id),0) + 1, false) FROM "${tableName}";`)
-    } catch (e) {
-        // Ignore if sequence doesn't exist or not PostgreSQL
-        console.warn(`Could not sync sequence for ${tableName}:`, e.message)
-    }
   }
 
   try {
@@ -148,11 +135,9 @@ export default async function handler(req, res) {
         const mappedData = await mapTypes(validatedData, entity)
         
         // Sync sequence before creating to avoid Unique Constraint errors if data was manually inserted
-        if (entity === 'Users') await syncSequence('Users')
-        if (entity === 'Group') await syncSequence('Group')
-        if (entity === 'Expense') await syncSequence('Expense')
-        if (entity === 'BudgetCategory') await syncSequence('BudgetCategory')
-        if (entity === 'Income') await syncSequence('Income')
+        if (['Users', 'Group', 'Expense', 'BudgetCategory', 'Income'].includes(entity)) {
+            await syncSequence(entity === 'Group' ? 'Group' : entity)
+        }
 
         const newItem = await prisma[entity].create({ 
             data: mappedData

@@ -4,20 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DollarSign, Pencil, Check, X, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGroupData } from "@/hooks/use-group-data";
+import { useGroup } from "@/contexts/GroupContext";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
+import { base44 } from "@/api/client";
 
-const IncomeSection = memo(function IncomeSection({ groupId }) {
+const IncomeSection = memo(function IncomeSection() {
     const { user, updateMe } = useAuth();
     const { 
         group, 
         incomes, 
-        members, 
-        isFetching, 
-        totalIncome, 
-        actions 
-    } = useGroupData(groupId);
+        isLoading,
+    } = useGroup();
 
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
@@ -27,7 +25,9 @@ const IncomeSection = memo(function IncomeSection({ groupId }) {
     const [editingNameUserId, setEditingNameUserId] = useState(null);
     const [editNameValue, setEditNameValue] = useState("");
 
-    const isOwner = group?.members?.[0] === user.id;
+    const members = group?.membersList || [];
+    const isOwner = group?.members?.[0] === user?.id;
+    const totalIncome = (incomes || []).reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
 
     const getPercentage = (amount) => {
         if (totalIncome === 0) return 0;
@@ -42,52 +42,51 @@ const IncomeSection = memo(function IncomeSection({ groupId }) {
         const existingIncome = incomes.find(i => String(i.user) === String(targetUserId));
 
         if (existingIncome) {
-            await actions.updateIncome({ id: existingIncome.id, amount });
+            await base44.entities.Income.update(existingIncome.id, { amount });
         } else {
-            await actions.addIncome({ user: targetUserId, amount });
+            await base44.entities.Income.create({ user: targetUserId, amount }, group.id);
         }
         setAddingIncome(false);
         setNewAmount("");
         setAddingForUserId("");
+        window.location.reload(); // Quick refresh for demo consistency
     };
 
     const handleUpdateIncome = async (incomeId) => {
         const amount = parseFloat(editAmount);
         if (isNaN(amount) || amount < 0) return;
-        await actions.updateIncome({ id: incomeId, amount });
+        await base44.entities.Income.update(incomeId, { amount });
         setEditingId(null);
         setEditAmount("");
+        window.location.reload();
     };
 
-    // Note: handleSaveName still uses base44 directly for other users
     const handleSaveName = async (userId) => {
         if (!editNameValue.trim()) return;
         
         if (userId === user.id) {
             await updateMe({ full_name: editNameValue.trim() });
         } else {
-            // This is a bit of a special case for other users
-            const { base44 } = await import("@/api/client");
             await base44.entities.Users.update(userId, { name: editNameValue.trim() });
-            actions.refreshAll();
         }
 
         setEditingNameUserId(null);
         setEditNameValue("");
+        window.location.reload();
     };
 
     const memberIncomeMap = {};
-    incomes.forEach((i) => {
+    (incomes || []).forEach((i) => {
         memberIncomeMap[i.user] = i;
     });
 
-    const activeIncomes = incomes.filter(i => (i.amount || 0) > 0);
+    const activeIncomes = (incomes || []).filter(i => (Number(i.amount) || 0) > 0);
 
     return (
         <SectionCard
             title="Income Overview"
             icon={DollarSign}
-            loading={isFetching}
+            loading={isLoading}
             actions={!addingIncome && (
                 <Button
                     size="sm"
@@ -273,7 +272,7 @@ const IncomeSection = memo(function IncomeSection({ groupId }) {
                         {/* Percentage bar */}
                         <div className="mt-2 sm:mt-3 h-2 sm:h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex">
                             {activeIncomes.map((income, idx) => {
-                                const pct = (income.amount / totalIncome) * 100;
+                                const pct = (Number(income.amount) / totalIncome) * 100;
                                 const colors = [
                                     "bg-indigo-500",
                                     "bg-emerald-500",

@@ -8,7 +8,7 @@ import ProfileModal from "./components/auth/ProfileModal";
 import { useAuth } from "./contexts/AuthContext";
 
 export default function Layout({ children, currentPageName }) {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [menuOpen, setMenuOpen] = useState(false);
     const [profileOpen, setProfileOpen] = useState(false);
     const [darkMode, setDarkMode] = useState(() => {

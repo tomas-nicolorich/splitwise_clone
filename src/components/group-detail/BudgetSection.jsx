@@ -1,24 +1,22 @@
 import React, { useState, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, Plus, Trash2, Users, Pencil, ArrowRightLeft } from "lucide-react";
-import { useGroupData } from "@/hooks/use-group-data";
+import { useGroup } from "@/contexts/GroupContext";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
 import BudgetCategoryDialog from "./BudgetCategoryDialog";
 import BudgetTransferDialog from "./BudgetTransferDialog";
+import { base44 } from "@/api/client";
 
-const BudgetSection = memo(function BudgetSection({ groupId }) {
+const BudgetSection = memo(function BudgetSection() {
     const { 
         group, 
         categories, 
         incomes, 
         expenses, 
-        members, 
-        categorySplits, 
-        totalBudget,
-        isFetching,
-        actions 
-    } = useGroupData(groupId);
+        financialSplits, 
+        isLoading 
+    } = useGroup();
 
     const [showAdd, setShowAdd] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
@@ -29,22 +27,26 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
     const [transferSourceUserId, setTransferSourceUserId] = useState("");
     const [transferCategoryId, setTransferCategoryId] = useState("");
 
+    const members = group?.membersList || [];
+    const totalBudget = (categories || []).reduce((sum, c) => sum + Number(c.amount), 0);
+
     const getSpentInCategory = (userId, categoryId) => {
-        return expenses
+        return (expenses || [])
             .filter(e => String(e.category_id) === String(categoryId) && String(e.paid_by) === String(userId) && !e.description?.startsWith('[BUDGET_TRANSFER]'))
-            .reduce((sum, e) => sum + e.amount, 0);
+            .reduce((sum, e) => sum + Number(e.amount), 0);
     };
 
     const handleSaveCategory = async (data) => {
         setLoadingAction(true);
         try {
             if (data.id) {
-                await actions.updateCategory(data);
+                await base44.entities.BudgetCategory.update(data.id, data);
             } else {
-                await actions.addCategory(data);
+                await base44.entities.BudgetCategory.create({ ...data, group_id: group.id }, group.id);
             }
             setShowAdd(false);
             setEditingCategory(null);
+            window.location.reload();
         } catch (e) {
             console.error("Failed to save category:", e);
         } finally {
@@ -56,14 +58,15 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
         setLoadingAction(true);
         try {
             const senderName = getUserName(sourceUserId, members);
-            await actions.addExpense({
+            await base44.entities.Expense.create({
                 category_id: categoryId,
                 description: `[BUDGET_TRANSFER] TO:${targetUserId} FROM:${senderName}`,
                 amount: amount,
                 paid_by: sourceUserId,
                 date: new Date().toISOString().split("T")[0],
-            });
+            }, group.id);
             setShowTransfer(false);
+            window.location.reload();
         } catch (e) {
             console.error("Transfer failed:", e);
         } finally {
@@ -83,16 +86,16 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
     };
 
     const totalSharePerMember = useMemo(() => {
-        return incomes
-            .filter(i => (i.amount || 0) > 0)
+        return (incomes || [])
+            .filter(i => (Number(i.amount) || 0) > 0)
             .map(income => {
-                const share = categories.reduce((sum, cat) => {
-                    const split = categorySplits[cat.id]?.find(s => String(s.userId) === String(income.user));
+                const share = (categories || []).reduce((sum, cat) => {
+                    const split = financialSplits[cat.id]?.find(s => String(s.userId) === String(income.user));
                     return sum + (split ? split.share : 0);
                 }, 0);
                 return { userId: income.user, share };
             });
-    }, [incomes, categories, categorySplits]);
+    }, [incomes, categories, financialSplits]);
 
     const colors = [
         "bg-indigo-500",
@@ -115,7 +118,7 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
             <SectionCard
                 title="Budget Categories"
                 icon={LayoutGrid}
-                loading={isFetching}
+                loading={isLoading}
                 actions={
                     <Button size="sm" className="h-8 text-xs sm:h-9 sm:text-sm" onClick={() => {
                         setEditingCategory(null);
@@ -125,14 +128,14 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
                     </Button>
                 }
             >
-                {categories.length === 0 ? (
+                {(categories || []).length === 0 ? (
                     <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-6">
                         No budget categories yet. Add one to see how expenses should be split.
                     </p>
                 ) : (
                     <div className="space-y-3 sm:space-y-4">
-                        {categories.map((cat) => {
-                            const splits = categorySplits[cat.id] || [];
+                        {(categories || []).map((cat) => {
+                            const splits = financialSplits[cat.id] || [];
 
                             return (
                                 <div key={cat.id} className="rounded-xl border border-slate-100 dark:border-slate-700 overflow-hidden">
@@ -141,12 +144,6 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
                                             <span className="text-xl sm:text-2xl shrink-0">{cat.icon || ""}</span>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">{cat.name}</span>
-                                                {cat.members && cat.members.length > 0 && (
-                                                    <span className="text-[9px] text-slate-500 flex items-center gap-1">
-                                                        <Users className="w-2.5 h-2.5" />
-                                                        {cat.members.length} members
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
@@ -166,7 +163,7 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
                                                     size="icon"
                                                     variant="ghost"
                                                     className="h-6 w-6 sm:h-7 sm:w-7"
-                                                    onClick={() => actions.deleteCategory(cat.id)}
+                                                    onClick={() => base44.entities.BudgetCategory.delete(cat.id, group.id).then(() => window.location.reload())}
                                                 >
                                                     <Trash2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-red-500" />
                                                 </Button>
@@ -277,7 +274,7 @@ const BudgetSection = memo(function BudgetSection({ groupId }) {
                 onOpenChange={setShowTransfer}
                 sourceUserId={transferSourceUserId}
                 categoryId={transferCategoryId}
-                categoryName={categories.find(c => c.id === transferCategoryId)?.name}
+                categoryName={(categories || []).find(c => c.id === transferCategoryId)?.name}
                 members={members}
                 onTransfer={handleTransferBudget}
                 loading={loadingAction}

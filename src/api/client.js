@@ -3,8 +3,20 @@ import { supabase } from '@/lib/supabase-client';
 // Vercel Serverless Function based backend (Prisma + Supabase)
 const API_BASE_URL = '/api';
 
+/**
+ * @typedef {Object} FetchAPIOptions
+ * @property {any} [providedSession]
+ * @property {string} [method]
+ * @property {Object} [headers]
+ * @property {any} [body]
+ */
+
+/**
+ * @param {string} endpoint
+ * @param {FetchAPIOptions} [options]
+ */
 const fetchAPI = async (endpoint, options = {}) => {
-  const { providedSession, ...otherOptions } = options;
+  const { providedSession, ...otherOptions } = /** @type {any} */ (options);
   
   // Use provided session or fetch current one
   let session = providedSession;
@@ -49,8 +61,11 @@ const fetchAPI = async (endpoint, options = {}) => {
   }
 };
 
-const createEntityStore = (entityName) => ({
-  list: async (sort) => {
+const createEntityStore = (entityName, specificEndpoint = null) => ({
+  list: async (sort, group_id = null) => {
+    if (specificEndpoint && !sort) {
+        return fetchAPI(`${specificEndpoint}?operation=list${group_id ? `&group_id=${group_id}` : ''}`, { method: 'GET' });
+    }
     return fetchAPI(`data?entity=${entityName}&operation=list`, {
       method: 'POST',
       body: JSON.stringify({ sort }),
@@ -62,7 +77,13 @@ const createEntityStore = (entityName) => ({
       body: JSON.stringify({ criteria }),
     });
   },
-  create: async (data) => {
+  create: async (data, group_id = null) => {
+    if (specificEndpoint) {
+        return fetchAPI(`${specificEndpoint}?operation=create${group_id ? `&group_id=${group_id}` : ''}`, {
+            method: 'POST',
+            body: JSON.stringify({ data })
+        });
+    }
     return fetchAPI(`data?entity=${entityName}&operation=create`, {
       method: 'POST',
       body: JSON.stringify({ data }),
@@ -74,7 +95,10 @@ const createEntityStore = (entityName) => ({
       body: JSON.stringify({ id, data }),
     });
   },
-  delete: async (id) => {
+  delete: async (id, group_id = null) => {
+    if (specificEndpoint) {
+        return fetchAPI(`${specificEndpoint}?operation=delete&id=${id}${group_id ? `&group_id=${group_id}` : ''}`, { method: 'DELETE' });
+    }
     return fetchAPI(`data?entity=${entityName}&operation=delete`, {
       method: 'POST',
       body: JSON.stringify({ id }),
@@ -165,10 +189,10 @@ export const base44 = {
     },
   },
   entities: {
-    Group: createEntityStore('Group'),
-    Income: createEntityStore('Income'),
-    BudgetCategory: createEntityStore('BudgetCategory'),
-    Expense: createEntityStore('Expense'),
+    Group: createEntityStore('Group', 'groups'),
+    Income: createEntityStore('Income', 'incomes'),
+    BudgetCategory: createEntityStore('BudgetCategory', 'categories'),
+    Expense: createEntityStore('Expense', 'expenses'),
     Users: {
       ...createEntityStore('Users'),
       filter: async (criteria) => {
