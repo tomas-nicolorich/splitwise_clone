@@ -1,14 +1,15 @@
 import React, { useState, useMemo, memo } from "react";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, Plus, Trash2, Users, Pencil, ArrowRightLeft } from "lucide-react";
+import { LayoutGrid, Plus, Trash2, Pencil, ArrowRightLeft } from "lucide-react";
 import { useGroup } from "@/contexts/GroupContext";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
 import BudgetCategoryDialog from "./BudgetCategoryDialog";
 import BudgetTransferDialog from "./BudgetTransferDialog";
 import { base44 } from "@/api/client";
+import { BudgetCategory, User } from "@/api/types";
 
-const BudgetSection = memo(function BudgetSection() {
+const BudgetSection: React.FC = memo(function BudgetSection() {
     const { 
         group, 
         categories, 
@@ -19,7 +20,7 @@ const BudgetSection = memo(function BudgetSection() {
     } = useGroup();
 
     const [showAdd, setShowAdd] = useState(false);
-    const [editingCategory, setEditingCategory] = useState(null);
+    const [editingCategory, setEditingCategory] = useState<BudgetCategory | null>(null);
     const [loadingAction, setLoadingAction] = useState(false);
 
     // Transfer State
@@ -27,22 +28,22 @@ const BudgetSection = memo(function BudgetSection() {
     const [transferSourceUserId, setTransferSourceUserId] = useState("");
     const [transferCategoryId, setTransferCategoryId] = useState("");
 
-    const members = group?.membersList || [];
+    const members = (group as any)?.membersList || [] as User[];
     const totalBudget = (categories || []).reduce((sum, c) => sum + Number(c.amount), 0);
 
-    const getSpentInCategory = (userId, categoryId) => {
+    const getSpentInCategory = (userId: string, categoryId: string) => {
         return (expenses || [])
             .filter(e => String(e.category_id) === String(categoryId) && String(e.paid_by) === String(userId) && !e.description?.startsWith('[BUDGET_TRANSFER]'))
             .reduce((sum, e) => sum + Number(e.amount), 0);
     };
 
-    const handleSaveCategory = async (data) => {
+    const handleSaveCategory = async (data: any) => {
         setLoadingAction(true);
         try {
             if (data.id) {
                 await base44.entities.BudgetCategory.update(data.id, data);
             } else {
-                await base44.entities.BudgetCategory.create({ ...data, group_id: group.id }, group.id);
+                await base44.entities.BudgetCategory.create({ ...data, group_id: group?.id }, group?.id as string);
             }
             setShowAdd(false);
             setEditingCategory(null);
@@ -54,7 +55,7 @@ const BudgetSection = memo(function BudgetSection() {
         }
     };
 
-    const handleTransferBudget = async ({ sourceUserId, targetUserId, categoryId, amount }) => {
+    const handleTransferBudget = async ({ sourceUserId, targetUserId, categoryId, amount }: { sourceUserId: string, targetUserId: string, categoryId: string, amount: number }) => {
         setLoadingAction(true);
         try {
             const senderName = getUserName(sourceUserId, members);
@@ -64,7 +65,7 @@ const BudgetSection = memo(function BudgetSection() {
                 amount: amount,
                 paid_by: sourceUserId,
                 date: new Date().toISOString().split("T")[0],
-            }, group.id);
+            }, group?.id as string);
             setShowTransfer(false);
             window.location.reload();
         } catch (e) {
@@ -74,12 +75,12 @@ const BudgetSection = memo(function BudgetSection() {
         }
     };
 
-    const handleEditClick = (cat) => {
+    const handleEditClick = (cat: BudgetCategory) => {
         setEditingCategory(cat);
         setShowAdd(true);
     };
 
-    const handleTransferClick = (cat, sourceUserId) => {
+    const handleTransferClick = (cat: BudgetCategory, sourceUserId: string) => {
         setTransferCategoryId(cat.id);
         setTransferSourceUserId(sourceUserId);
         setShowTransfer(true);
@@ -163,7 +164,7 @@ const BudgetSection = memo(function BudgetSection() {
                                                     size="icon"
                                                     variant="ghost"
                                                     className="h-6 w-6 sm:h-7 sm:w-7"
-                                                    onClick={() => base44.entities.BudgetCategory.delete(cat.id, group.id).then(() => window.location.reload())}
+                                                    onClick={() => base44.entities.BudgetCategory.delete(cat.id, group?.id as string).then(() => window.location.reload())}
                                                 >
                                                     <Trash2 className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-slate-400 hover:text-red-500" />
                                                 </Button>
@@ -274,7 +275,7 @@ const BudgetSection = memo(function BudgetSection() {
                 onOpenChange={setShowTransfer}
                 sourceUserId={transferSourceUserId}
                 categoryId={transferCategoryId}
-                categoryName={(categories || []).find(c => c.id === transferCategoryId)?.name}
+                categoryName={(categories || []).find(c => c.id === transferCategoryId)?.name || ""}
                 members={members}
                 onTransfer={handleTransferBudget}
                 loading={loadingAction}

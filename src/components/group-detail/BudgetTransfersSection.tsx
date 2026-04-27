@@ -12,11 +12,18 @@ import { format } from "date-fns";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
+import { Expense, User } from "@/api/types";
 
-const TransferRow = ({ transfer, members }) => {
+interface TransferRowProps {
+    transfer: Expense;
+    members: User[];
+}
+
+const TransferRow: React.FC<TransferRowProps> = ({ transfer, members }) => {
     // Extract receiver name/ID from description if possible, or use fallback
     // Description format: [BUDGET_TRANSFER] TO:{receiverId} FROM:{senderName}
-    const receiverMatch = transfer.description.match(/TO:(\d+)/);
+    const description = transfer.description || "";
+    const receiverMatch = description.match(/TO:(\d+)/);
     const receiverId = receiverMatch ? receiverMatch[1] : null;
     const receiverName = receiverId ? getUserName(receiverId, members) : "Unknown";
     const senderName = getUserName(transfer.paid_by, members);
@@ -49,7 +56,11 @@ const TransferRow = ({ transfer, members }) => {
     );
 };
 
-const BudgetTransfersSection = memo(function BudgetTransfersSection({ groupId }) {
+interface BudgetTransfersSectionProps {
+    groupId: string;
+}
+
+const BudgetTransfersSection: React.FC<BudgetTransfersSectionProps> = memo(function BudgetTransfersSection({ groupId }) {
     const { 
         expenses, 
         members, 
@@ -62,8 +73,8 @@ const BudgetTransfersSection = memo(function BudgetTransfersSection({ groupId })
         return (expenses || [])
             .filter(e => e.description?.startsWith('[BUDGET_TRANSFER]'))
             .sort((a, b) => {
-                const dateA = a.date ? new Date(a.date) : new Date(0);
-                const dateB = b.date ? new Date(b.date) : new Date(0);
+                const dateA = a.date ? new Date(a.date).getTime() : 0;
+                const dateB = b.date ? new Date(b.date).getTime() : 0;
                 return dateB - dateA;
             });
     }, [expenses]);
@@ -94,7 +105,7 @@ const BudgetTransfersSection = memo(function BudgetTransfersSection({ groupId })
                         className="w-full text-violet-600 dark:text-violet-400 text-xs sm:text-sm h-8 mt-1"
                         onClick={() => setShowAll(true)}
                     >
-                        <List className="w-3.5 h-3.5 mr-1.5" />
+                        <History className="w-3.5 h-3.5 mr-1.5" />
                         See All ({transfers.length})
                     </Button>
                 )}

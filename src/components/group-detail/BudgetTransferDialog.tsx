@@ -18,6 +18,18 @@ import {
 } from "@/components/ui/select";
 import { ArrowRightLeft } from "lucide-react";
 import { getUserName } from "@/utils/utils";
+import { User } from "@/api/types";
+
+interface BudgetTransferDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    sourceUserId: string;
+    categoryId: string;
+    categoryName: string;
+    members: User[];
+    onTransfer: (data: { sourceUserId: string; targetUserId: string; categoryId: string; amount: number }) => void;
+    loading: boolean;
+}
 
 /**
  * Dialog for transferring budget between members.
@@ -31,7 +43,7 @@ export default function BudgetTransferDialog({
     members, 
     onTransfer, 
     loading 
-}) {
+}: BudgetTransferDialogProps) {
     const [targetUserId, setTargetUserId] = useState("");
     const [amount, setAmount] = useState("");
 

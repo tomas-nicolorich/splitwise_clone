@@ -16,6 +16,7 @@ import { useGroup } from "@/contexts/GroupContext";
 import SectionCard from "@/components/ui/SectionCard";
 import { getUserName } from "@/utils/utils";
 import { base44 } from "@/api/client";
+import { Expense, BudgetCategory, User } from "@/api/types";
 
 import {
     AlertDialog,
@@ -29,7 +30,17 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, handleDelete }) => {
+interface ExpenseRowProps {
+    expense: Expense;
+    categories: BudgetCategory[] | undefined;
+    user: User;
+    isOwner: boolean;
+    members: User[];
+    handleEdit: (expense: Expense) => void;
+    handleDelete: (id: string) => Promise<void>;
+}
+
+const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, categories, user, isOwner, members, handleEdit, handleDelete }) => {
     const category = categories?.find(c => String(c.id) === String(expense.category_id));
     return (
         <div
@@ -78,7 +89,12 @@ const ExpenseRow = ({ expense, categories, user, isOwner, members, handleEdit, h
     );
 };
 
-const ExpensesSection = memo(function ExpensesSection({ expenses: propExpenses, fullMode = false }) {
+interface ExpensesSectionProps {
+    expenses?: Expense[];
+    fullMode?: boolean;
+}
+
+const ExpensesSection: React.FC<ExpensesSectionProps> = memo(function ExpensesSection({ expenses: propExpenses, fullMode = false }) {
     const { user } = useAuth();
     const { 
         group, 
@@ -89,14 +105,15 @@ const ExpensesSection = memo(function ExpensesSection({ expenses: propExpenses, 
 
     const [showAdd, setShowAdd] = useState(false);
     const [showAllExpenses, setShowAllExpenses] = useState(false);
-    const [editingExpense, setEditingExpense] = useState(null);
+    const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [loadingClear, setLoadingClear] = useState(false);
 
     const expenses = propExpenses || hookExpenses || [];
-    const members = group?.membersList || [];
+    const members = (group as any)?.membersList || [] as User[];
     const isOwner = group?.members?.[0] === user?.id;
 
     const handleClearAll = async () => {
+        if (!group) return;
         setLoadingClear(true);
         try {
             for (const expense of expenses) {
@@ -111,12 +128,13 @@ const ExpensesSection = memo(function ExpensesSection({ expenses: propExpenses, 
         }
     };
 
-    const handleEdit = (expense) => {
+    const handleEdit = (expense: Expense) => {
         setEditingExpense(expense);
         setShowAdd(true);
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = async (id: string) => {
+        if (!group) return;
         await base44.entities.Expense.delete(id, group.id);
         window.location.reload();
     };
@@ -124,8 +142,8 @@ const ExpensesSection = memo(function ExpensesSection({ expenses: propExpenses, 
     const sortedExpenses = [...expenses]
         .filter(e => !e.description?.startsWith('[BUDGET_TRANSFER]'))
         .sort((a, b) => {
-            const dateA = a.created_at ? new Date(a.created_at) : new Date(0);
-            const dateB = b.created_at ? new Date(b.created_at) : new Date(0);
+            const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+            const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
             return dateB - dateA;
         });
 
