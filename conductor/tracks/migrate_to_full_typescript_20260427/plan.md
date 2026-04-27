@@ -4,7 +4,7 @@
 - [x] Task: Merge `jsconfig.json` into `tsconfig.json` and configure `strict: true`, including both `src/` and `api/` directories. b11e85d
 - [x] Task: Identify and install missing `@types/` packages for all third-party dependencies. 1f99d53
 - [x] Task: Replace third-party libraries that lack `@types/` with typed alternatives (and remove deprecated/unused ones). e0aa0d7
-- [ ] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models.
+- [x] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models. e2f263f
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Core Types' (Protocol in workflow.md)
 
 ## Phase 2: Leaf Utilities Conversion
