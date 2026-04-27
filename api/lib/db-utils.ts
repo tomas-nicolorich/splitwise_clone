@@ -3,7 +3,7 @@ import prisma from './prisma';
 /**
  * Serializes BigInt values to string for JSON output.
  */
-export const serializeBigInt = (data) => {
+export const serializeBigInt = <T>(data: T): any => {
   return JSON.parse(
     JSON.stringify(data, (_, value) => (typeof value === 'bigint' ? value.toString() : value))
   );
@@ -12,12 +12,12 @@ export const serializeBigInt = (data) => {
 /**
  * Syncs Postgres primary key sequence.
  */
-export const syncSequence = async (tableName) => {
+export const syncSequence = async (tableName: string): Promise<void> => {
   try {
     await prisma.$executeRawUnsafe(
       `SELECT setval(pg_get_serial_sequence('"${tableName}"', 'id'), coalesce(max(id),0) + 1, false) FROM "${tableName}";`
     );
-  } catch (e) {
+  } catch (e: any) {
     console.warn(`Could not sync sequence for ${tableName}:`, e.message);
   }
 };
@@ -25,9 +25,9 @@ export const syncSequence = async (tableName) => {
 /**
  * Maps UUID (auth_id) to BigInt (id).
  */
-export const resolveUuidToBigInt = async (uuid) => {
+export const resolveUuidToBigInt = async (uuid: string): Promise<bigint | null> => {
   const user = await prisma.users.findFirst({
     where: { auth_id: uuid },
   });
-  return user ? user.id : null;
+  return user ? (user.id as unknown as bigint) : null;
 };

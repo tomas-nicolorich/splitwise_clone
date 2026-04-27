@@ -7,8 +7,7 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true })
 
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
-import pkg from '@prisma/client'
-const { PrismaClient } = pkg
+import { PrismaClient } from '@prisma/client'
 
 const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL
 
@@ -27,7 +26,7 @@ const prismaClientSingleton = () => {
   return new PrismaClient({ adapter })
 }
 
-const globalForPrisma = globalThis
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
 

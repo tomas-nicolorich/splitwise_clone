@@ -39,3 +39,9 @@ export const schemas = {
   BudgetCategory: BudgetCategorySchema,
   Users: UserSchema,
 };
+
+export type ExpenseInput = z.infer<typeof ExpenseSchema>;
+export type IncomeInput = z.infer<typeof IncomeSchema>;
+export type GroupInput = z.infer<typeof GroupSchema>;
+export type BudgetCategoryInput = z.infer<typeof BudgetCategorySchema>;
+export type UserInput = z.infer<typeof UserSchema>;
