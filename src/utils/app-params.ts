@@ -1,14 +1,28 @@
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map() } : window;
+
+// Mock storage for Node environments
+const windowObj = isNode ? { 
+    localStorage: {
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {}
+    } 
+} : window;
+
 const storage = windowObj.localStorage;
 
-const toSnakeCase = (str) => {
+const toSnakeCase = (str: string): string => {
     return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
 
-const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
+interface AppParamOptions {
+    defaultValue?: string;
+    removeFromUrl?: boolean;
+}
+
+const getAppParamValue = (paramName: string, { defaultValue = undefined, removeFromUrl = false }: AppParamOptions = {}): string | null => {
     if (isNode) {
-        return defaultValue;
+        return defaultValue || null;
     }
     const storageKey = `base44_${toSnakeCase(paramName)}`;
     const urlParams = new URLSearchParams(window.location.search);
@@ -34,7 +48,15 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
     return null;
 }
 
-const getAppParams = () => {
+export interface AppParams {
+    appId: string | null;
+    token: string | null;
+    fromUrl: string | null;
+    functionsVersion: string | null;
+    appBaseUrl: string | null;
+}
+
+const getAppParams = (): AppParams => {
     if (getAppParamValue("clear_access_token") === 'true') {
         storage.removeItem('base44_access_token');
         storage.removeItem('token');
@@ -42,13 +64,12 @@ const getAppParams = () => {
     return {
         appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
         token: getAppParamValue("access_token", { removeFromUrl: true }),
-        fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
+        fromUrl: getAppParamValue("from_url", { defaultValue: typeof window !== 'undefined' ? window.location.href : undefined }),
         functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
         appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
     }
 }
 
-
-export const appParams = {
+export const appParams: AppParams = {
     ...getAppParams()
 }
