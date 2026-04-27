@@ -17,7 +17,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Leaf Utilities Conversion' (Protocol in workflow.md) 9451c0a
 
 ## Phase 3: API Layer Conversion
-- [ ] Task: Rename and type `src/api/client.js` and `src/api/batch-queries.js` to `.ts`.
+- [x] Task: Rename and type `src/api/client.js` and `src/api/batch-queries.js` to `.ts`. e5b98db
 - [ ] Task: Rename and type `api/data.js` to `.ts`.
     - [ ] Sub-task: Implement explicit type assertions (`as any`) for dynamic Prisma entity access.
 - [ ] Task: Rename and type remaining API endpoints (`api/auth.js`, `api/groups.js`, etc.) to `.ts`.
