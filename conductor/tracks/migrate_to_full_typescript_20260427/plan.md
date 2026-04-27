@@ -1,7 +1,7 @@
 # Implementation Plan: Migrate to Full TypeScript
 
 ## Phase 1: Infrastructure & Core Types
-- [ ] Task: Merge `jsconfig.json` into `tsconfig.json` and configure `strict: true`, including both `src/` and `api/` directories.
+- [x] Task: Merge `jsconfig.json` into `tsconfig.json` and configure `strict: true`, including both `src/` and `api/` directories. b11e85d
 - [ ] Task: Identify and install missing `@types/` packages for all third-party dependencies.
 - [ ] Task: Replace third-party libraries that lack `@types/` with typed alternatives.
 - [ ] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models.
