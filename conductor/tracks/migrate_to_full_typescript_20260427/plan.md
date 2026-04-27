@@ -7,14 +7,14 @@
 - [x] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models. e2f263f
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Core Types' (Protocol in workflow.md) 30a6ea7
 
-## Phase 2: Leaf Utilities Conversion
+## Phase 2: Leaf Utilities Conversion [checkpoint: 9451c0a]
 - [x] Task: Rename and type `src/utils/*.js` and `src/utils/*.test.js` files to `.ts`/`.test.ts`. b956dc4
     - [x] Sub-task: Convert `financial-utils.js` and fix typing errors. b956dc4
     - [x] Sub-task: Convert `app-params.js`. b956dc4
 - [x] Task: Rename and type `api/lib/*.js` files to `.ts`. 2cc13f0
     - [x] Sub-task: Convert `db-utils.js` and `schemas.js`. 2cc13f0
     - [x] Sub-task: Convert `prisma.js` and `supabase-admin.js`. 2cc13f0
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Leaf Utilities Conversion' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Leaf Utilities Conversion' (Protocol in workflow.md) 9451c0a
 
 ## Phase 3: API Layer Conversion
 - [ ] Task: Rename and type `src/api/client.js` and `src/api/batch-queries.js` to `.ts`.
