@@ -11,9 +11,9 @@
 - [x] Task: Rename and type `src/utils/*.js` and `src/utils/*.test.js` files to `.ts`/`.test.ts`. b956dc4
     - [x] Sub-task: Convert `financial-utils.js` and fix typing errors. b956dc4
     - [x] Sub-task: Convert `app-params.js`. b956dc4
-- [ ] Task: Rename and type `api/lib/*.js` files to `.ts`.
-    - [ ] Sub-task: Convert `db-utils.js` and `schemas.js`.
-    - [ ] Sub-task: Convert `prisma.js` and `supabase-admin.js`.
+- [x] Task: Rename and type `api/lib/*.js` files to `.ts`. 2cc13f0
+    - [x] Sub-task: Convert `db-utils.js` and `schemas.js`. 2cc13f0
+    - [x] Sub-task: Convert `prisma.js` and `supabase-admin.js`. 2cc13f0
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Leaf Utilities Conversion' (Protocol in workflow.md)
 
 ## Phase 3: API Layer Conversion
