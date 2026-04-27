@@ -2,7 +2,7 @@
 
 ## Phase 1: Infrastructure & Core Types
 - [x] Task: Merge `jsconfig.json` into `tsconfig.json` and configure `strict: true`, including both `src/` and `api/` directories. b11e85d
-- [ ] Task: Identify and install missing `@types/` packages for all third-party dependencies.
+- [x] Task: Identify and install missing `@types/` packages for all third-party dependencies. 1f99d53
 - [ ] Task: Replace third-party libraries that lack `@types/` with typed alternatives.
 - [ ] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Core Types' (Protocol in workflow.md)
