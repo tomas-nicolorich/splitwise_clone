@@ -18,8 +18,8 @@
 
 ## Phase 3: API Layer Conversion
 - [x] Task: Rename and type `src/api/client.js` and `src/api/batch-queries.js` to `.ts`. e5b98db
-- [ ] Task: Rename and type `api/data.js` to `.ts`.
-    - [ ] Sub-task: Implement explicit type assertions (`as any`) for dynamic Prisma entity access.
+- [x] Task: Rename and type `api/data.js` to `.ts`. 8305c1d
+    - [x] Sub-task: Implement explicit type assertions (`as any`) for dynamic Prisma entity access. 8305c1d
 - [ ] Task: Rename and type remaining API endpoints (`api/auth.js`, `api/groups.js`, etc.) to `.ts`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: API Layer Conversion' (Protocol in workflow.md)
 
