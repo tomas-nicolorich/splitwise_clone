@@ -10,6 +10,10 @@ const AlertDialogTrigger = AlertDialogPrimitive.Trigger
 
 const AlertDialogPortal = AlertDialogPrimitive.Portal
 
+export type AlertDialogProps = React.ComponentPropsWithoutRef<typeof AlertDialog>
+export type AlertDialogTriggerProps = React.ComponentPropsWithoutRef<typeof AlertDialogTrigger>
+export type AlertDialogPortalProps = React.ComponentPropsWithoutRef<typeof AlertDialogPortal>
+
 const AlertDialogOverlay = React.forwardRef<
     React.ElementRef<typeof AlertDialogPrimitive.Overlay>,
     React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
