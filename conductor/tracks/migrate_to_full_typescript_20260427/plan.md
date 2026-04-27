@@ -1,11 +1,11 @@
 # Implementation Plan: Migrate to Full TypeScript
 
-## Phase 1: Infrastructure & Core Types
+## Phase 1: Infrastructure & Core Types [checkpoint: 30a6ea7]
 - [x] Task: Merge `jsconfig.json` into `tsconfig.json` and configure `strict: true`, including both `src/` and `api/` directories. b11e85d
 - [x] Task: Identify and install missing `@types/` packages for all third-party dependencies. 1f99d53
 - [x] Task: Replace third-party libraries that lack `@types/` with typed alternatives (and remove deprecated/unused ones). e0aa0d7
 - [x] Task: Create `src/api/types.ts` to define shared frontend-friendly types mapped from Prisma models. e2f263f
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Core Types' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Infrastructure & Core Types' (Protocol in workflow.md) 30a6ea7
 
 ## Phase 2: Leaf Utilities Conversion
 - [ ] Task: Rename and type `src/utils/*.js` and `src/utils/*.test.js` files to `.ts`/`.test.ts`.
