@@ -24,7 +24,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 3: API Layer Conversion' (Protocol in workflow.md) e1196ec
 
 ## Phase 4: UI Layer Conversion (Components & Contexts)
-- [ ] Task: Rename and type `src/contexts/*.jsx` to `.tsx`.
+- [x] Task: Rename and type `src/contexts/*.jsx` to `.tsx`. 4f36ee5
 - [ ] Task: Rename and type `src/hooks/*.js(x)` to `.ts(x)`.
 - [ ] Task: Rename and type `src/components/ui/*.jsx` to `.tsx`.
 - [ ] Task: Rename and type remaining components (`auth`, `dashboard`, `group-detail`) to `.tsx`.
