@@ -9,7 +9,22 @@ import { cn } from "@/utils/utils";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 
-export default function SavingTargetSection({ groupId }) {
+import React, { useState, useMemo } from "react";
+import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Target, Users, Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/utils/utils";
+import { useGroupData } from "@/hooks/use-group-data";
+import SectionCard from "@/components/ui/SectionCard";
+
+interface SavingTargetSectionProps {
+    groupId: string;
+}
+
+export default function SavingTargetSection({ groupId }: SavingTargetSectionProps) {
     const { 
         members, 
         incomes, 
@@ -17,10 +32,10 @@ export default function SavingTargetSection({ groupId }) {
     } = useGroupData(groupId);
 
     const [targetAmount, setTargetAmount] = useState("");
-    const [targetDate, setTargetDate] = useState(undefined);
+    const [targetDate, setTargetDate] = useState<Date | undefined>(undefined);
     const [startingBalance, setStartingBalance] = useState("");
     const [monthlyExpenses, setMonthlyExpenses] = useState("");
-    const [manualContributions, setManualContributions] = useState({}); // { memberId: amount }
+    const [manualContributions, setManualContributions] = useState<Record<string, string>>({}); // { memberId: amount }
 
     const calculation = useMemo(() => {
         const amount = parseFloat(targetAmount);
@@ -43,11 +58,11 @@ export default function SavingTargetSection({ groupId }) {
         // 1. The Plan (Goal-Based)
         const requiredMonthlyNet = remainingGoal / monthsRemaining;
         const idealGroupContribution = requiredMonthlyNet; // Expenses do not increase the target
-        const totalIncome = incomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+        const totalIncome = incomes.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
         const idealBreakdown = members.map(member => {
             // Sum all incomes for this user
-            const userIncomes = incomes.filter(i => i.user === member.id);
-            const income = userIncomes.reduce((sum, i) => sum + (i.amount || 0), 0);
+            const userIncomes = incomes.filter(i => String(i.user) === String(member.id));
+            const income = userIncomes.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
             
             const incomePct = totalIncome > 0 ? (income / totalIncome) : 0;
             const contribution = incomePct * idealGroupContribution;
@@ -72,7 +87,7 @@ export default function SavingTargetSection({ groupId }) {
 
         const actualMonthlyNet = actualGroupContribution - monthlyExp;
         
-        let projection = null;
+        let projection: any = null;
         if (actualMonthlyNet <= 0) {
             projection = { error: "Goal never reached (Expenses ≥ Contributions)" };
         } else {
@@ -94,7 +109,8 @@ export default function SavingTargetSection({ groupId }) {
             idealGroupContribution,
             idealBreakdown,
             projection,
-            remainingGoal
+            remainingGoal,
+            error: null as string | null
         };
     }, [targetAmount, targetDate, startingBalance, monthlyExpenses, members, incomes, manualContributions]);
 

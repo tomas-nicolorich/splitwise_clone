@@ -13,7 +13,13 @@ import { base44 } from "@/api/client";
 import { toast } from "sonner";
 import { useGroupData } from "@/hooks/use-group-data";
 
-export default function InviteMemberDialog({ open, onOpenChange, groupId }) {
+interface InviteMemberDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    groupId: string;
+}
+
+export default function InviteMemberDialog({ open, onOpenChange, groupId }: InviteMemberDialogProps) {
     const { group, actions } = useGroupData(groupId);
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
@@ -23,6 +29,8 @@ export default function InviteMemberDialog({ open, onOpenChange, groupId }) {
             toast.error("Please enter a valid email address.");
             return;
         }
+        if (!group) return;
+        
         const trimmed = email.trim().toLowerCase();
 
         setLoading(true);

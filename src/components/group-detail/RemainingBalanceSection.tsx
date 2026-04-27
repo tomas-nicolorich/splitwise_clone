@@ -3,7 +3,11 @@ import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 
-const RemainingBalanceSection = memo(function RemainingBalanceSection({ groupId }) {
+interface RemainingBalanceSectionProps {
+    groupId: string;
+}
+
+const RemainingBalanceSection: React.FC<RemainingBalanceSectionProps> = memo(function RemainingBalanceSection({ groupId }) {
     const { 
         members, 
         incomes, 
@@ -19,7 +23,7 @@ const RemainingBalanceSection = memo(function RemainingBalanceSection({ groupId 
             let totalBudgeted = 0;
             // Iterate all categories and sum up this user's share
             Object.values(categorySplits).forEach(categoryShares => {
-                const userShare = categoryShares.find(s => String(s.userId) === String(member.id));
+                const userShare = (categoryShares as any[]).find(s => String(s.userId) === String(member.id));
                 if (userShare) {
                     totalBudgeted += userShare.share;
                 }

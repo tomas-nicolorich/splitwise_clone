@@ -10,6 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { BudgetCategory, User } from "@/api/types";
+
+interface BudgetCategoryDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    category?: BudgetCategory | null;
+    members: User[];
+    onSave: (data: any) => void;
+    loading: boolean;
+}
 
 /**
  * Dialog for adding or editing a budget category.
@@ -21,11 +31,11 @@ export default function BudgetCategoryDialog({
     members, 
     onSave, 
     loading 
-}) {
+}: BudgetCategoryDialogProps) {
     const [name, setName] = useState("");
     const [amount, setAmount] = useState("");
     const [icon, setIcon] = useState("📁");
-    const [selectedMembers, setSelectedMembers] = useState([]);
+    const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
 
     useEffect(() => {
         if (category) {
@@ -54,7 +64,7 @@ export default function BudgetCategoryDialog({
         });
     };
 
-    const toggleMember = (memberId) => {
+    const toggleMember = (memberId: string) => {
         setSelectedMembers(prev =>
             prev.includes(memberId)
                 ? prev.filter(id => id !== memberId)

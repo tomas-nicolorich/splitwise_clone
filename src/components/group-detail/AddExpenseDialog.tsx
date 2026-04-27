@@ -18,13 +18,21 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGroupData } from "@/hooks/use-group-data";
+import { Expense } from "@/api/types";
+
+interface AddExpenseDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    editingExpense?: Expense | null;
+    groupId: string;
+}
 
 export default function AddExpenseDialog({ 
     open, 
     onOpenChange, 
     editingExpense, 
     groupId
-}) {
+}: AddExpenseDialogProps) {
     const { user } = useAuth();
     const { 
         group, 
@@ -52,7 +60,7 @@ export default function AddExpenseDialog({
                 setDescription("");
                 setAmount("");
                 setCategoryId("");
-                setPaidByUserId(isOwner ? user?.id : "");
+                setPaidByUserId(isOwner ? user?.id || "" : "");
             }
         }
     }, [open, editingExpense, isOwner, user?.id]);
@@ -63,6 +71,7 @@ export default function AddExpenseDialog({
         if (isOwner && !paidByUserId) return;
 
         const targetUserId = isOwner ? paidByUserId : user?.id;
+        if (!targetUserId) return;
 
         setLoading(true);
 
@@ -93,7 +102,7 @@ export default function AddExpenseDialog({
         }
     };
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
             handleAddExpense();
         }
