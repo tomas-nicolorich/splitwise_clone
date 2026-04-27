@@ -14,9 +14,12 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "@/lib/supabase-client";
 
+interface ProfileModalProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+}
 
-
-export default function ProfileModal({ open, onOpenChange }) {
+export default function ProfileModal({ open, onOpenChange }: ProfileModalProps) {
     const { user, updateMe } = useAuth();
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
@@ -64,7 +67,7 @@ export default function ProfileModal({ open, onOpenChange }) {
 
             toast.success("Profile updated!");
             onOpenChange(false);
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error updating profile:", e);
             toast.error(e.message || "Failed to update profile.");
         } finally {

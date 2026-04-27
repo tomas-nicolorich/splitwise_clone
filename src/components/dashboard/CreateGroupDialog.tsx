@@ -11,7 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
-export default function CreateGroupDialog({ open, onOpenChange, onCreate }) {
+interface CreateGroupDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onCreate: (data: { name: string; description: string }) => Promise<void>;
+}
+
+export default function CreateGroupDialog({ open, onOpenChange, onCreate }: CreateGroupDialogProps) {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [loading, setLoading] = useState(false);

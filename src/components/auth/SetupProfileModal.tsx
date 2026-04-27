@@ -14,9 +14,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { supabase } from "@/lib/supabase-client";
 
-
-
-const EMOJIS = ["👤", "🐱", "🐶", "🦊", "🦁", "🐸", "🐵", "🦄", "🌈", "⭐", "🔥", "💎", "🍕", "🎨", "🚀"];
+// const EMOJIS = ["👤", "🐱", "🐶", "🦊", "🦁", "🐸", "🐵", "🦄", "🌈", "⭐", "🔥", "💎", "🍕", "🎨", "🚀"];
 
 export default function SetupProfileModal() {
     const { user, updateMe } = useAuth();
@@ -36,7 +34,7 @@ export default function SetupProfileModal() {
                              user.name.includes('@');
 
             if (isGeneric) {
-                setName(user.name === 'New User' ? '' : user.name);
+                setName(user.name === 'New User' ? '' : user.name || '');
                 setOpen(true);
             }
         }
@@ -77,7 +75,7 @@ export default function SetupProfileModal() {
 
             toast.success("Profile updated!");
             setOpen(false);
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error updating profile:", e);
             toast.error(e.message || "Failed to update profile.");
         } finally {
@@ -108,8 +106,8 @@ export default function SetupProfileModal() {
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             autoComplete="off"
-                            data-1p-ignore
-                            data-lpignore="true"
+                            // data-1p-ignore
+                            // data-lpignore="true"
                             className="dark:bg-slate-900 dark:border-slate-700 dark:text-white"
                         />
                     </div>

@@ -3,8 +3,13 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "../../utils";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, ChevronRight } from "lucide-react";
+import { Group } from "@/api/types";
 
-export default function GroupCard({ group }) {
+interface GroupCardProps {
+    group: Group;
+}
+
+export default function GroupCard({ group }: GroupCardProps) {
     const memberCount = (group.members?.length || 0);
 
     return (
