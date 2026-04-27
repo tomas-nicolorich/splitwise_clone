@@ -25,7 +25,7 @@
 
 ## Phase 4: UI Layer Conversion (Components & Contexts)
 - [x] Task: Rename and type `src/contexts/*.jsx` to `.tsx`. 4f36ee5
-- [ ] Task: Rename and type `src/hooks/*.js(x)` to `.ts(x)`.
+- [x] Task: Rename and type `src/hooks/*.js(x)` to `.ts(x)`. b4695e5
 - [ ] Task: Rename and type `src/components/ui/*.jsx` to `.tsx`.
 - [ ] Task: Rename and type remaining components (`auth`, `dashboard`, `group-detail`) to `.tsx`.
 - [ ] Task: Conductor - User Manual Verification 'Phase 4: UI Layer Conversion (Components & Contexts)' (Protocol in workflow.md)
