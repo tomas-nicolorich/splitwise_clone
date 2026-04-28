@@ -9,17 +9,6 @@ import { cn } from "@/utils/utils";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";
 
-import React, { useState, useMemo } from "react";
-import { format } from "date-fns";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Target, Users, Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/utils/utils";
-import { useGroupData } from "@/hooks/use-group-data";
-import SectionCard from "@/components/ui/SectionCard";
-
 interface SavingTargetSectionProps {
     groupId: string;
 }
@@ -251,7 +240,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
                                 <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
                                     <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">The Goal (Plan)</p>
                                     <div className="space-y-1">
-                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{format(targetDate, "MMM yyyy")}</p>
+                                        <p className="text-xl font-bold text-slate-900 dark:text-white">{format(targetDate!, "MMM yyyy")}</p>
                                         <p className="text-xs text-slate-500">Need ${calculation.idealGroupContribution.toLocaleString(undefined, { maximumFractionDigits: 0 })}/mo total</p>
                                     </div>
                                 </div>
@@ -261,7 +250,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
                                     "p-4 rounded-2xl border transition-colors",
                                     calculation.projection.error 
                                         ? "bg-red-50 dark:bg-red-900/20 border-red-100 dark:border-red-800"
-                                        : calculation.projection.projectedDate <= targetDate
+                                        : calculation.projection.projectedDate <= targetDate!
                                             ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800"
                                             : "bg-amber-50 dark:bg-amber-900/20 border-amber-100 dark:border-amber-800"
                                 )}>
@@ -275,7 +264,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
                                         <div className="space-y-1">
                                             <p className={cn(
                                                 "text-xl font-bold",
-                                                calculation.projection.projectedDate <= targetDate ? "text-emerald-600" : "text-amber-600"
+                                                calculation.projection.projectedDate <= targetDate! ? "text-emerald-600" : "text-amber-600"
                                             )}>
                                                 {format(calculation.projection.projectedDate, "MMM yyyy")}
                                             </p>
