@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,16 @@ import SectionCard from "@/components/ui/SectionCard";
 
 interface SavingTargetSectionProps {
     groupId: string;
+}
+
+interface CalculationResult {
+    monthsRemaining?: number;
+    requiredMonthlyNet?: number;
+    idealGroupContribution?: number;
+    idealBreakdown?: any[];
+    projection?: any;
+    remainingGoal?: number;
+    error: string | null;
 }
 
 export default function SavingTargetSection({ groupId }: SavingTargetSectionProps) {
@@ -26,7 +36,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
     const [monthlyExpenses, setMonthlyExpenses] = useState("");
     const [manualContributions, setManualContributions] = useState<Record<string, string>>({}); // { memberId: amount }
 
-    const calculation = useMemo(() => {
+    const calculation = useMemo<CalculationResult | null>(() => {
         const amount = parseFloat(targetAmount);
         const startBal = parseFloat(startingBalance) || 0;
         const monthlyExp = parseFloat(monthlyExpenses) || 0;
@@ -99,7 +109,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
             idealBreakdown,
             projection,
             remainingGoal,
-            error: null as string | null
+            error: null
         };
     }, [targetAmount, targetDate, startingBalance, monthlyExpenses, members, incomes, manualContributions]);
 
@@ -181,7 +191,7 @@ export default function SavingTargetSection({ groupId }: SavingTargetSectionProp
                     </div>
                 </div>
 
-                {calculation && !calculation.error && (
+                {calculation && !calculation.error && calculation.monthsRemaining !== undefined && calculation.idealGroupContribution !== undefined && calculation.idealBreakdown !== undefined && (
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-700 space-y-3">
                         <div className="flex justify-between items-center text-sm">
                             <span className="text-slate-500 dark:text-slate-400">Months Remaining:</span>

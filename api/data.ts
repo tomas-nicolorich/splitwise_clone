@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return where
   }
 
-  const mapTypes = async (data: any, entityName: string) => {
+  const mapTypes = async (data: any) => {
     if (!data) return data
     const newData = { ...data }
     const bigIntFields = ['id', 'group_id', 'category_id', 'user', 'paid_by']
@@ -105,7 +105,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return newData
   }
 
-  const enrichResult = (item: any, entityName: string) => {
+  const enrichResult = (item: any) => {
     if (!item) return item
     const result = serialize(item)
     return result
@@ -121,22 +121,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
         
         const items = await prismaEntity.findMany(options)
-        return res.status(200).json(items.map((i: any) => enrichResult(i, entity)))
+        return res.status(200).json(items.map((i: any) => enrichResult(i)))
       }
       case 'filter': {
         const { criteria } = params as { criteria: any }
-        const mappedCriteria = await mapTypes(criteria, entity)
+        const mappedCriteria = await mapTypes(criteria)
         const where = mapCriteria(mappedCriteria)
         const options = { where }
         
         const items = await prismaEntity.findMany(options)
-        return res.status(200).json(items.map((i: any) => enrichResult(i, entity)))
+        return res.status(200).json(items.map((i: any) => enrichResult(i)))
       }
       case 'create': {
         const { data } = params as { data: any }
         const entitySchema = (schemas as any)[entity];
         const validatedData = validateData(data, entitySchema);
-        const mappedData = await mapTypes(validatedData, entity)
+        const mappedData = await mapTypes(validatedData)
         
         // Sync sequence before creating to avoid Unique Constraint errors if data was manually inserted
         if (['Users', 'Group', 'Expense', 'BudgetCategory', 'Income'].includes(entity)) {
@@ -146,11 +146,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const newItem = await prismaEntity.create({ 
             data: mappedData
         })
-        return res.status(200).json(enrichResult(newItem, entity))
+        return res.status(200).json(enrichResult(newItem))
       }
       case 'update': {
         const { id, data } = params as { id: string, data: any }
-        const mappedData = await mapTypes(data, entity)
+        const mappedData = await mapTypes(data)
         
         let updatedItem;
         if (entity === 'Income') {
@@ -166,7 +166,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
           updatedItem = await prismaEntity.update(options)
         }
-        return res.status(200).json(enrichResult(updatedItem, entity))
+        return res.status(200).json(enrichResult(updatedItem))
       }
       case 'delete': {
         const { id } = params as { id: string }

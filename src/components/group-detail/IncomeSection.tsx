@@ -111,7 +111,7 @@ const IncomeSection: React.FC = memo(function IncomeSection() {
                                     <SelectValue placeholder="Select member" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {members.map(m => (
+                                    {members.map((m: User) => (
                                         <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
                                     ))}
                                 </SelectContent>
@@ -144,7 +144,7 @@ const IncomeSection: React.FC = memo(function IncomeSection() {
                     </div>
                 )}
 
-                {members.map((member) => {
+                {members.map((member: User) => {
                     const income = memberIncomeMap[member.id];
                     if (!income) {
                         if (user && member.id === user.id && addingIncome) return null;

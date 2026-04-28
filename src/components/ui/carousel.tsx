@@ -6,22 +6,22 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { cn } from "@/utils/utils"
 import { Button } from "@/components/ui/button"
+import type { EmblaCarouselType, EmblaOptionsType, EmblaPluginType } from "embla-carousel"
 
-type CarouselApi = UseEmblaCarouselType[1]
-type UseCarouselParameters = UseEmblaCarouselType[0]
-type CarouselOptions = Parameters<UseCarouselParameters>[0]
-type CarouselPlugin = Parameters<UseCarouselParameters>[1]
+type CarouselApi = EmblaCarouselType
+type CarouselOptions = EmblaOptionsType
+type CarouselPlugin = EmblaPluginType
 
 type CarouselProps = {
     opts?: CarouselOptions
-    plugins?: CarouselPlugin
+    plugins?: CarouselPlugin[]
     orientation?: "horizontal" | "vertical"
     setApi?: (api: CarouselApi) => void
 }
 
 type CarouselContextProps = {
-    carouselRef: ReturnType<UseEmblaCarouselType[0]>
-    api: CarouselApi
+    carouselRef: UseEmblaCarouselType[0]
+    api: UseEmblaCarouselType[1]
     scrollPrev: () => void
     scrollNext: () => void
     canScrollPrev: boolean

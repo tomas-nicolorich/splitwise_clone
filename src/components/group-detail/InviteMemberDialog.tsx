@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -37,7 +37,7 @@ export default function InviteMemberDialog({ open, onOpenChange, groupId }: Invi
 
         try {
             // 1. Invite via Supabase Admin (Backend)
-            const inviteResult = await base44.auth.inviteUserByEmail(trimmed);
+            const inviteResult = await base44.auth.inviteUserByEmail(trimmed) as any;
             const invitedUser = inviteResult.user;
 
             // 2. Find or create the user record in public.Users

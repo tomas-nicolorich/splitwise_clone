@@ -10,6 +10,7 @@ export interface User {
   created_at: string;
   auth_id: string | null;
   icon: string | null;
+  role?: string;
 }
 
 export interface Group {

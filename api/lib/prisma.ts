@@ -15,6 +15,15 @@ if (!connectionString) {
   console.error('DATABASE_URL or POSTGRES_URL is missing in environment variables')
 }
 
+// Extend PrismaClient to support PascalCase aliases used in the API
+interface ExtendedPrismaClient extends PrismaClient {
+  Users: PrismaClient['appUser'];
+  Group: PrismaClient['group'];
+  Expense: PrismaClient['expense'];
+  BudgetCategory: PrismaClient['budgetCategory'];
+  Income: PrismaClient['income'];
+}
+
 const prismaClientSingleton = () => {
   const isSslDisabled = connectionString?.includes('sslmode=disable');
 
@@ -23,10 +32,19 @@ const prismaClientSingleton = () => {
     ssl: isSslDisabled ? false : { rejectUnauthorized: false },
   })
   const adapter = new PrismaPg(pool)
-  return new PrismaClient({ adapter })
+  const client = new PrismaClient({ adapter }) as any;
+  
+  // Add PascalCase aliases mapped to the new appUser model
+  client.Users = client.appUser;
+  client.Group = client.group;
+  client.Expense = client.expense;
+  client.BudgetCategory = client.budgetCategory;
+  client.Income = client.income;
+
+  return client as ExtendedPrismaClient;
 }
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
+const globalForPrisma = globalThis as unknown as { prisma: ExtendedPrismaClient | undefined }
 
 const prisma = globalForPrisma.prisma ?? prismaClientSingleton()
 

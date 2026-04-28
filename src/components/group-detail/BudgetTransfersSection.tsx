@@ -7,7 +7,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowRightLeft, List, History } from "lucide-react";
+import { ArrowRightLeft, History } from "lucide-react";
 import { format } from "date-fns";
 import { useGroupData } from "@/hooks/use-group-data";
 import SectionCard from "@/components/ui/SectionCard";

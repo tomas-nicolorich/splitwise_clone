@@ -27,7 +27,7 @@ export const syncSequence = async (tableName: string): Promise<void> => {
  */
 export const resolveUuidToBigInt = async (uuid: string): Promise<bigint | null> => {
   const user = await prisma.users.findFirst({
-    where: { auth_id: uuid },
+    where: { id: uuid },
   });
   return user ? (user.id as unknown as bigint) : null;
 };

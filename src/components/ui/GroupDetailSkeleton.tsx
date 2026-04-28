@@ -1,7 +1,6 @@
-import * as React from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export function SectionSkeleton({ title }: { title?: string }) {
+export function SectionSkeleton({ title: _title }: { title?: string }) {
     return (
         <div className="p-4 border rounded-xl border-slate-200 space-y-3">
             <Skeleton className="h-5 w-40" />

@@ -531,55 +531,70 @@ const sidebarMenuButtonVariants = cva(
     }
 )
 
-const SidebarMenuButton = React.forwardRef((
-    {
-        asChild = false,
-        isActive = false,
-        variant = "default",
-        size = "default",
-        tooltip,
-        className,
-        ...props
-    },
-    ref
-) => {
-    const Comp = asChild ? Slot : "button"
-    const { isMobile, state } = useSidebar()
+const SidebarMenuButton = React.forwardRef<
+    HTMLButtonElement,
+    React.ComponentProps<"button"> & {
+        asChild?: boolean
+        isActive?: boolean
+        tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    } & VariantProps<typeof sidebarMenuButtonVariants>
+>(
+    (
+        {
+            asChild = false,
+            isActive = false,
+            variant = "default",
+            size = "default",
+            tooltip,
+            className,
+            ...props
+        },
+        ref
+    ) => {
+        const Comp = asChild ? Slot : "button"
+        const { isMobile, state } = useSidebar()
 
-    const button = (
-        <Comp
-            ref={ref}
-            data-sidebar="menu-button"
-            data-size={size}
-            data-active={isActive}
-            className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-            {...props} />
-    )
+        const button = (
+            <Comp
+                ref={ref}
+                data-sidebar="menu-button"
+                data-size={size}
+                data-active={isActive}
+                className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
+                {...props} />
+        )
 
-    if (!tooltip) {
-        return button
-    }
-
-    if (typeof tooltip === "string") {
-        tooltip = {
-            children: tooltip,
+        if (!tooltip) {
+            return button
         }
-    }
 
-    return (
-        (<Tooltip>
-            <TooltipTrigger asChild>{button}</TooltipTrigger>
-            <TooltipContent
-                side="right"
-                align="center"
-                hidden={state !== "collapsed" || isMobile}
-                {...tooltip} />
-        </Tooltip>)
-    );
-})
+        if (typeof tooltip === "string") {
+            tooltip = {
+                children: tooltip,
+            }
+        }
+
+        return (
+            (<Tooltip>
+                <TooltipTrigger asChild>{button}</TooltipTrigger>
+                <TooltipContent
+                    side="right"
+                    align="center"
+                    hidden={state !== "collapsed" || isMobile}
+                    {...tooltip} />
+            </Tooltip>)
+        );
+    }
+)
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
-const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
+const SidebarMenuAction = React.forwardRef<
+    HTMLButtonElement,
+    React.ComponentProps<"button"> & {
+        asChild?: boolean
+        showOnHover?: boolean
+    }
+>(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button"
 
     return (
@@ -603,7 +618,10 @@ const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOn
 })
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
-const SidebarMenuBadge = React.forwardRef(({ className, ...props }, ref) => (
+const SidebarMenuBadge = React.forwardRef<
+    HTMLDivElement,
+    React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
     <div
         ref={ref}
         data-sidebar="menu-badge"
@@ -620,7 +638,12 @@ const SidebarMenuBadge = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SidebarMenuBadge.displayName = "SidebarMenuBadge"
 
-const SidebarMenuSkeleton = React.forwardRef(({ className, showIcon = false, ...props }, ref) => {
+const SidebarMenuSkeleton = React.forwardRef<
+    HTMLDivElement,
+    React.ComponentProps<"div"> & {
+        showIcon?: boolean
+    }
+>(({ className, showIcon = false, ...props }, ref) => {
     // Random width between 50 to 90%.
     const width = React.useMemo(() => {
         return `${Math.floor(Math.random() * 40) + 50}%`;
@@ -641,14 +664,17 @@ const SidebarMenuSkeleton = React.forwardRef(({ className, showIcon = false, ...
                 style={
                     {
                         "--skeleton-width": width
-                    }
+                    } as React.CSSProperties
                 } />
         </div>)
     );
 })
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
-const SidebarMenuSub = React.forwardRef(({ className, ...props }, ref) => (
+const SidebarMenuSub = React.forwardRef<
+    HTMLUListElement,
+    React.ComponentProps<"ul">
+>(({ className, ...props }, ref) => (
     <ul
         ref={ref}
         data-sidebar="menu-sub"
@@ -661,10 +687,20 @@ const SidebarMenuSub = React.forwardRef(({ className, ...props }, ref) => (
 ))
 SidebarMenuSub.displayName = "SidebarMenuSub"
 
-const SidebarMenuSubItem = React.forwardRef(({ ...props }, ref) => <li ref={ref} {...props} />)
+const SidebarMenuSubItem = React.forwardRef<
+    HTMLLIElement,
+    React.ComponentProps<"li">
+>(({ ...props }, ref) => <li ref={ref} {...props} />)
 SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 
-const SidebarMenuSubButton = React.forwardRef(
+const SidebarMenuSubButton = React.forwardRef<
+    HTMLAnchorElement,
+    React.ComponentProps<"a"> & {
+        asChild?: boolean
+        size?: "sm" | "md"
+        isActive?: boolean
+    }
+>(
     ({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
         const Comp = asChild ? Slot : "a"
 

@@ -1,5 +1,4 @@
 import React, { useState, memo } from "react";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -92,6 +91,7 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, categories, user, isOw
 interface ExpensesSectionProps {
     expenses?: Expense[];
     fullMode?: boolean;
+    groupId?: string;
 }
 
 const ExpensesSection: React.FC<ExpensesSectionProps> = memo(function ExpensesSection({ expenses: propExpenses, fullMode = false }) {
@@ -107,6 +107,8 @@ const ExpensesSection: React.FC<ExpensesSectionProps> = memo(function ExpensesSe
     const [showAllExpenses, setShowAllExpenses] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [loadingClear, setLoadingClear] = useState(false);
+
+    if (!user || isLoading) return null;
 
     const expenses = propExpenses || hookExpenses || [];
     const members = (group as any)?.membersList || [] as User[];
@@ -191,7 +193,7 @@ const ExpensesSection: React.FC<ExpensesSectionProps> = memo(function ExpensesSe
                     if (!open) setEditingExpense(null);
                 }}
                 editingExpense={editingExpense}
-                groupId={group?.id}
+                groupId={group?.id || ""}
             />
 
             <Dialog open={showAllExpenses} onOpenChange={setShowAllExpenses}>

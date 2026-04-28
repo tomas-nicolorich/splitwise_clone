@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase-client';
-import { User, Group, Income, BudgetCategory, Expense, GroupData } from './types';
+import { User, Group, Income, BudgetCategory, Expense } from './types';
 
 // Vercel Serverless Function based backend (Prisma + Supabase)
 const API_BASE_URL = '/api';
@@ -194,7 +194,7 @@ export const base44 = {
       await supabase.auth.signOut();
       if (redirect) window.location.href = '/login';
     },
-    redirectToLogin: (redirect?: boolean) => {
+    redirectToLogin: (_redirect?: boolean) => {
       window.location.href = '/login';
     },
   },
@@ -214,12 +214,12 @@ export const base44 = {
     },
   },
   users: {
-    inviteUser: async (nameOrId: string, role: string) => {
+    inviteUser: async (_nameOrId: string, _role: string) => {
       return true;
     },
   },
   appLogs: {
-    logUserInApp: async (page: string) => {
+    logUserInApp: async (_page: string) => {
       // Logic for logging user app usage
     },
   },

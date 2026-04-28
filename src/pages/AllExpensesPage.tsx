@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Receipt, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,13 @@ import {
 } from "@/components/ui/select";
 import ExpensesSection from "@/components/group-detail/ExpensesSection";
 import AddExpenseDialog from "@/components/group-detail/AddExpenseDialog";
-import { useAuth } from "@/contexts/AuthContext";
 import { useGroupData } from "@/hooks/use-group-data";
 import { GroupDetailSkeleton } from "@/components/ui/GroupDetailSkeleton";
 
 export default function AllExpensesPage() {
-    const { user } = useAuth();
-    const [showAdd, setShowAdd] = useState(false);
-    const [selectedUser, setSelectedUser] = useState("all");
-    const [selectedCategory, setSelectedCategory] = useState("all");
+    const [showAdd, setShowAdd] = useState<boolean>(false);
+    const [selectedUser, setSelectedUser] = useState<string>("all");
+    const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get("id");
@@ -31,7 +29,7 @@ export default function AllExpensesPage() {
         members,
         categories,
         expenses
-    } = useGroupData(groupId);
+    } = useGroupData(groupId || '');
 
     const filteredExpenses = expenses.filter(expense => {
         const userMatch = selectedUser === "all" || String(expense.paid_by) === String(selectedUser);
@@ -89,7 +87,7 @@ export default function AllExpensesPage() {
                         <SelectContent>
                             <SelectItem value="all">All Members</SelectItem>
                             {members.map(m => (
-                                <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>
+                                <SelectItem key={String(m.id)} value={String(m.id)}>{m.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -104,7 +102,7 @@ export default function AllExpensesPage() {
                         <SelectContent>
                             <SelectItem value="all">All Categories</SelectItem>
                             {categories.map(c => (
-                                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                                <SelectItem key={String(c.id)} value={String(c.id)}>{c.name}</SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
@@ -134,7 +132,7 @@ export default function AllExpensesPage() {
                 </div>
             ) : (
                 <ExpensesSection 
-                    groupId={groupId}
+                    groupId={groupId || ''}
                     expenses={filteredExpenses} 
                     fullMode={true}
                 />
@@ -143,7 +141,7 @@ export default function AllExpensesPage() {
             <AddExpenseDialog 
                 open={showAdd}
                 onOpenChange={setShowAdd}
-                groupId={groupId}
+                groupId={groupId || ''}
             />
         </div>
     );

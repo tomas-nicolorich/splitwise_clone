@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { LogOut, PieChart, Menu, X, Moon, Sun } from "lucide-react";
@@ -7,12 +7,20 @@ import SetupProfileModal from "./components/auth/SetupProfileModal";
 import ProfileModal from "./components/auth/ProfileModal";
 import { useAuth } from "./contexts/AuthContext";
 
-export default function Layout({ children, currentPageName }) {
+interface LayoutProps {
+    children: ReactNode;
+    currentPageName?: string;
+}
+
+export default function Layout({ children, currentPageName: _currentPageName }: LayoutProps) {
     const { user, logout } = useAuth();
-    const [menuOpen, setMenuOpen] = useState(false);
-    const [profileOpen, setProfileOpen] = useState(false);
-    const [darkMode, setDarkMode] = useState(() => {
-        return localStorage.getItem('darkMode') === 'true';
+    const [menuOpen, setMenuOpen] = useState<boolean>(false);
+    const [profileOpen, setProfileOpen] = useState<boolean>(false);
+    const [darkMode, setDarkMode] = useState<boolean>(() => {
+        if (typeof localStorage !== 'undefined') {
+            return localStorage.getItem('darkMode') === 'true';
+        }
+        return false;
     });
 
     useEffect(() => {
@@ -66,7 +74,7 @@ export default function Layout({ children, currentPageName }) {
                                         className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900 flex items-center justify-center hover:ring-2 hover:ring-indigo-500 transition-all overflow-hidden"
                                     >
                                         <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">
-                                            {user.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase()}
+                                            {user.name?.[0]?.toUpperCase() || 'U'}
                                         </span>
 
                                     </button>

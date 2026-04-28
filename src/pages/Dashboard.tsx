@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
-import GroupCard from "../components/dashboard/GroupCard.jsx";
+import GroupCard from "../components/dashboard/GroupCard";
 import CreateGroupDialog from "../components/dashboard/CreateGroupDialog";
 import { useAuth } from "../contexts/AuthContext";
 import { DashboardSkeleton } from "@/components/ui/DashboardSkeleton";
@@ -9,7 +9,7 @@ import { useGroups } from "@/hooks/use-groups";
 
 export default function Dashboard() {
     const { user } = useAuth();
-    const [showCreate, setShowCreate] = useState(false);
+    const [showCreate, setShowCreate] = useState<boolean>(false);
     const { groups, isLoading, actions } = useGroups();
 
     if (!user) {
@@ -64,7 +64,9 @@ export default function Dashboard() {
             <CreateGroupDialog
                 open={showCreate}
                 onOpenChange={setShowCreate}
-                onCreate={actions.createGroup}
+                onCreate={async (data) => {
+                    await actions.createGroup(data);
+                }}
             />
         </div>
     );

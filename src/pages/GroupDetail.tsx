@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { createPageUrl } from "../utils";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,8 @@ function GroupDetailContent() {
     const [searchParams] = useSearchParams();
     const groupId = searchParams.get("id");
     const { user } = useAuth();
-    const [showInvite, setShowInvite] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showInvite, setShowInvite] = useState<boolean>(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState<boolean>(false);
 
     const { group, isLoading } = useGroup();
 
@@ -51,7 +51,7 @@ function GroupDetailContent() {
         );
     }
 
-    const isOwner = group.ownerId === user.id;
+    const isOwner = group.members && group.members.length > 0 && String(group.members[0]) === String(user.id);
 
     return (
         <div>
@@ -98,7 +98,7 @@ function GroupDetailContent() {
 
             {/* Members strip */}
             <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
-                {(group.membersList || []).map((member) => (
+                {((group as any).membersList || []).map((member: any) => (
                     <div
                         key={member.id}
                         className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shrink-0"
@@ -110,7 +110,7 @@ function GroupDetailContent() {
                         </div>
                         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                             {member.name}
-                            {group.members?.[0] === member.id && (
+                            {group.members && group.members.length > 0 && String(group.members[0]) === String(member.id) && (
                                 <span className="text-indigo-500 dark:text-indigo-400 ml-1">• Owner</span>
                             )}
                         </span>
@@ -122,9 +122,9 @@ function GroupDetailContent() {
                 {/* Left Column: Data Entry */}
                 <div className="space-y-4 sm:space-y-6">
                     <IncomeSection />
-                    <RemainingBalanceSection />
+                    <RemainingBalanceSection groupId={groupId || ''} />
                     <ExpensesSection />
-                    <BudgetTransfersSection />
+                    <BudgetTransfersSection groupId={groupId || ''} />
                 </div>
 
                 {/* Right Column: Analysis & Planning */}
@@ -138,7 +138,7 @@ function GroupDetailContent() {
             <InviteMemberDialog
                 open={showInvite}
                 onOpenChange={setShowInvite}
-                groupId={groupId}
+                groupId={groupId || ''}
             />
 
             <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
@@ -168,7 +168,7 @@ export default function GroupDetail() {
     const [searchParams] = useSearchParams();
     const groupId = searchParams.get("id");
     return (
-        <GroupProvider groupId={groupId}>
+        <GroupProvider groupId={groupId || ''}>
             <GroupDetailContent />
         </GroupProvider>
     );

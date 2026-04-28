@@ -9,13 +9,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 
 export default function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
 
-    const handleAuth = async (e) => {
+    const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError(null);
@@ -27,8 +27,8 @@ export default function Login() {
             });
             if (error) throw error;
             navigate('/');
-        } catch (err) {
-            setError(err.message);
+        } catch (err: any) {
+            setError(err.message || 'An error occurred during login');
         } finally {
             setIsLoading(false);
         }

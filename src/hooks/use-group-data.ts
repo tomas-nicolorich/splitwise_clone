@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { base44 } from "@/api/client";
-import { fetchGroupDataBatch } from "@/api/batch-queries";
 import { useMemo } from "react";
 import { calculateCategorySplitsOptimized } from "@/utils/financial-utils";
 import { getMappedIncomes } from "@/utils/utils";
@@ -99,6 +98,11 @@ export function useGroupData(groupId: string) {
         onSuccess: () => invalidate(["expenses"]),
     });
 
+    const updateExpense = useMutation({
+        mutationFn: ({ id, ...data }: { id: string } & Partial<Expense>) => base44.entities.Expense.update(id, data),
+        onSuccess: () => invalidate(["expenses"]),
+    });
+
     const deleteExpense = useMutation({
         mutationFn: (id: string) => base44.entities.Expense.delete(id),
         onSuccess: () => invalidate(["expenses"]),
@@ -150,6 +154,7 @@ export function useGroupData(groupId: string) {
             updateCategory: updateCategory.mutateAsync,
             deleteCategory: deleteCategory.mutateAsync,
             addExpense: addExpense.mutateAsync,
+            updateExpense: updateExpense.mutateAsync,
             deleteExpense: deleteExpense.mutateAsync,
             deleteGroup: deleteGroup.mutateAsync,
             inviteMember: inviteMember.mutateAsync,

@@ -1,15 +1,11 @@
-import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SavingTargetSection from "@/components/group-detail/SavingTargetSection";
 import SavingTargetSkeleton from "@/components/group-detail/SavingTargetSkeleton";
-import { useAuth } from "@/contexts/AuthContext";
-
 import { useGroupData } from "../hooks/use-group-data";
 
 export default function SavingTargetPage() {
-    const { user } = useAuth();
     const urlParams = new URLSearchParams(window.location.search);
     const groupId = urlParams.get("id");
 
@@ -17,9 +13,8 @@ export default function SavingTargetPage() {
         group, 
         isLoading, 
         isFetching,
-        members,
-        incomes
-    } = useGroupData(groupId);
+        members
+    } = useGroupData(groupId || '');
 
     if (!isLoading && !group) {
         return (
@@ -58,7 +53,7 @@ export default function SavingTargetPage() {
                 </div>
             ) : (
                 <SavingTargetSection 
-                    groupId={groupId}
+                    groupId={groupId || ''}
                 />
             )}
         </div>

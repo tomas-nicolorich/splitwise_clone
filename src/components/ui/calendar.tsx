@@ -78,7 +78,7 @@ function Calendar({
                 IconRight: ({ ...props }) => (
                     <ChevronRight className={cn("h-4 w-4", props.className)} />
                 ),
-                Dropdown: ({ value, onChange, children, ...props }: any) => {
+                Dropdown: ({ value, onChange, children }: any) => {
                     const options = React.Children.toArray(children) as React.ReactElement[]
                     const selected = options.find((child) => child.props.value === value)
                     const handleChange = (value: string) => {

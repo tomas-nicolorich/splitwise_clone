@@ -9,7 +9,7 @@ function memoize<T>(fn: (...args: any[]) => T): MemoizedFn<T> {
         if (cache.has(key)) {
             return cache.get(key) as T;
         }
-        const result = fn.apply(this, args);
+        const result = fn(...args);
         cache.set(key, result);
         return result;
     };

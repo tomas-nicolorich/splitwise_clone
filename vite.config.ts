@@ -1,13 +1,16 @@
 import react from '@vitejs/plugin-react'
-import vercel from 'vite-plugin-vercel'
+import vercel from 'vite-plugin-vercel/vite'
+import { getVercelEntries } from 'vite-plugin-vercel'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
-export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
+export default defineConfig(async () => ({
+  logLevel: 'info', // Show build info
   plugins: [
     react(),
-    vercel()
+    vercel({
+        entries: (await getVercelEntries('api', {})).filter(e => !e.id.includes('.test.') && !e.id.includes('lib/'))
+    })
   ],
   server: {
     proxy: {
@@ -30,4 +33,4 @@ export default defineConfig({
       },
     ],
   },
-})
+}))
