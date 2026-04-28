@@ -1,7 +1,7 @@
 # Tech Stack
 
 ## Language
-- JavaScript / TypeScript
+- TypeScript (Strict Mode)
 
 ## Frontend Framework
 - React 18
