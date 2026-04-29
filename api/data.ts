@@ -7,12 +7,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const params = { ...req.query, ...req.body }
   const { entity, operation } = params as { entity: string, operation: string }
 
-  // Use explicit type assertion for dynamic Prisma entity access
-  const prismaEntity = (prisma as any)[entity]
+  type EntityName = 'Users' | 'Group' | 'Expense' | 'BudgetCategory' | 'Income';
+  const isValidEntity = (e: string): e is EntityName => {
+    return ['Users', 'Group', 'Expense', 'BudgetCategory', 'Income'].includes(e);
+  };
 
-  if (!entity || !prismaEntity) {
+  if (!entity || !isValidEntity(entity)) {
     return res.status(400).json({ error: `Invalid entity: ${entity}` })
   }
+
+  // Define a common interface for the Prisma delegates to avoid union signature issues
+  interface CommonDelegate {
+    findMany(args?: any): Promise<any[]>;
+    findFirst(args?: any): Promise<any>;
+    create(args: any): Promise<any>;
+    update(args: any): Promise<any>;
+    updateMany(args: any): Promise<{ count: number }>;
+    delete(args: any): Promise<any>;
+    deleteMany(args: any): Promise<{ count: number }>;
+  }
+
+  const prismaEntity = prisma[entity] as unknown as CommonDelegate
 
   // Helper to serialize BigInt and Decimal (local specific logic for Amount/Income)
   const serialize = (data: any) => {

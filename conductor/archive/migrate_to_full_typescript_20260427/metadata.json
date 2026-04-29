@@ -1,8 +1,0 @@
-{
-  "track_id": "migrate_to_full_typescript_20260427",
-  "type": "chore",
-  "status": "new",
-  "created_at": "2026-04-27T00:00:00Z",
-  "updated_at": "2026-04-27T00:00:00Z",
-  "description": "migrate to full typescript"
-}

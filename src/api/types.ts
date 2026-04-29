@@ -4,52 +4,35 @@
  * Decimal is mapped to number for financial calculations.
  */
 
-export interface User {
-  id: string; // BigInt mapped to string
-  name: string;
-  created_at: string;
-  auth_id: string | null;
-  icon: string | null;
-  role?: string;
-}
+import type { 
+  Group as PrismaGroup, 
+  Expense as PrismaExpense, 
+  BudgetCategory as PrismaBudgetCategory, 
+  Income as PrismaIncome, 
+  AppUser as PrismaAppUser 
+} from '@prisma/client'
 
-export interface Group {
-  id: string; // BigInt mapped to string
-  name: string;
-  description: string | null;
-  created_at: string | null;
-  members: string[]; // BigInt[] mapped to string[]
-}
+export type ToFrontend<T> = T extends bigint
+  ? string
+  : T extends { toNumber(): number }
+  ? number
+  : T extends Date
+  ? string
+  : T extends Array<infer U>
+  ? Array<ToFrontend<U>>
+  : T extends object
+  ? { [K in keyof T]: ToFrontend<T[K]> }
+  : T;
 
-export interface BudgetCategory {
-  id: string; // BigInt mapped to string
-  group_id: string;
-  name: string;
-  amount: number; // Decimal mapped to number
-  icon: string | null;
-  created_at: string | null;
-  members: string[]; // BigInt[] mapped to string[]
-}
+export type User = ToFrontend<PrismaAppUser> & { role?: string };
 
-export interface Expense {
-  id: string; // BigInt mapped to string
-  group_id: string;
-  category_id: string;
-  description: string | null;
-  amount: number; // Decimal mapped to number
-  date: string;
-  created_at: string | null;
-  paid_by: string;
-}
+export type Group = ToFrontend<PrismaGroup>;
 
-export interface Income {
-  id: string; // BigInt mapped to string
-  group_id: string;
-  user: string;
-  amount: number; // Decimal mapped to number
-  currency: string;
-  created_at: string | null;
-}
+export type BudgetCategory = ToFrontend<PrismaBudgetCategory>;
+
+export type Expense = ToFrontend<PrismaExpense>;
+
+export type Income = ToFrontend<PrismaIncome>;
 
 // Unified Group Context Data Type
 export interface GroupData {
